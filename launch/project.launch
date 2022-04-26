@@ -1,9 +1,14 @@
 <launch>
-    <param name="r" type="double" value="0.07" />
-    <param name="l" type="double" value="0.2" />
-    <param name="w" type="double" value="0.169" />
-    <param name="T" type="double" value="5" />
-    <param name="N" type="int" value="42" />
+    <param name="r"          type="double" value="0.07" />
+    <param name="l"          type="double" value="0.2" />
+    <param name="w"          type="double" value="0.169" />
+    <param name="T"          type="double" value="5" />
+    <param name="N"          type="int"    value="42" />
+    <param name="x_init"     type="double" value="0.0"/>
+    <param name="y_init"     type="double" value="0.0"/>
+    <param name="theta_init" type="double" value="0.0"/>
+
+
 
     <node pkg="project1" type="odometry_pub" output="screen" name="my_publisher" />
     <node pkg="rosbag" type="play" name="player" args="$(find project1)/bags/bag1.bag"/>
