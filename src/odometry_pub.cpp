@@ -25,11 +25,11 @@ ros::Publisher odometry_pub;
 
 
 double vxFromWheelSpeeds(std::vector<double> speeds){
-    return -(r/4)*(speeds[front_left]+speeds[front_right]+speeds[rear_left]+speeds[rear_right]);
+    return (r/4)*(speeds[front_left]+speeds[front_right]+speeds[rear_left]+speeds[rear_right]);
 }
 
 double vyFromWheelSpeeds(std::vector<double> speeds){
-    return (r/4)*(speeds[front_left]-speeds[front_right]-speeds[rear_left]+speeds[rear_right]);   
+    return (r/4)*(-speeds[front_left]+speeds[front_right]+speeds[rear_left]-speeds[rear_right]);   
 }
 
 double omegaFromWheelSpeeds(std::vector<double> speeds){
@@ -70,8 +70,8 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
   double omega = omegaFromWheelSpeeds(speeds);
 
   // Perform runge-kutta and euler
-  x += vx;
-  y += vy;
+  x += vx*d_t;
+  y += vy*d_t;
   theta += omega;
 
   // Publish results
