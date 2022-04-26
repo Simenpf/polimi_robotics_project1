@@ -1,9 +1,0 @@
-Put project in catkin_ws/src.
-Every terminal you open move to catkin_ws root and run "source devel/setup.bash"
-
-To run code (from catkin_ws root):
-roslaunch src/project1/launch/project.launch
-
-Handy commands:
-rostopic list
-rostopic echo "topic name from rostopic list"
