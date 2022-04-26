@@ -69,10 +69,15 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
   double vy = vyFromWheelSpeeds(speeds);
   double omega = omegaFromWheelSpeeds(speeds);
 
-  // Perform runge-kutta and euler
-  x += vx*d_t;
-  y += vy*d_t;
-  theta += omega;
+  // Euler integration
+  x += (vx*cos(theta) - vy*sin(theta)) * d_t;
+  y += (vx*sin(theta) + vy*cos(theta)) * d_t;
+  theta += omega*d_t;
+
+  // TODO: publish pos, compare with GT using e.g. rqt_graph
+
+  // RK2 integration
+
 
   // Publish results
   geometry_msgs::TwistStamped out_msg;
