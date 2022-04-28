@@ -5,6 +5,7 @@
 #include "nav_msgs/Odometry.h"
 #include <sstream>
 #include "math.h"
+// #include "project1/Reset.h"
 
 // Declare variables to be retrieved from parameter-server
 double r;
@@ -100,6 +101,14 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
   // ROS_INFO("theta: [%f]", theta);
 }
 
+// bool reset_callback(project1::Reset::Request  &req, project1::Reset::Response &res) {
+//   x = req.new_x;
+//   y = req.new_y;
+//   theta = req.new_theta;
+//   ROS_INFO("x,y and theta reset...");
+//   return true;
+// }
+
 
 
 
@@ -124,6 +133,11 @@ int main(int argc, char **argv) {
   odometry_pub = n.advertise<geometry_msgs::TwistStamped>("cmd_val", 1000);
   pose_pub = n.advertise<nav_msgs::Odometry>("odom", 1000);
   ros::Subscriber encoder_sub = n.subscribe("wheel_states", 1000, encoderDataCallback);
+
+  //Define reset service handler
+  // ros::ServiceServer service = 
+  //     n.advertiseService<project1::Reset::Request, 
+  //                        project1::Reset::Response>("reset", reset_callback);
 
   ros::Rate loop_rate(100);
 
