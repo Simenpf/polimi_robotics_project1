@@ -2,6 +2,7 @@
 #include "std_msgs/String.h"
 #include "geometry_msgs/TwistStamped.h"
 #include "sensor_msgs/JointState.h"
+#include "nav_msgs/Odometry.h"
 #include <sstream>
 #include "math.h"
 
@@ -21,6 +22,7 @@ bool no_previous_encoder_msg = true;
 ros::Time prev_time;
 enum Wheels {front_left, front_right, rear_left, rear_right};
 ros::Publisher odometry_pub;
+ros::Publisher pose_pub;
 
 
 
@@ -80,16 +82,22 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
 
 
   // Publish results
-  geometry_msgs::TwistStamped out_msg;
-  out_msg.twist.linear.x  = vx;
-  out_msg.twist.linear.y  = vy;
-  out_msg.twist.angular.z = omega;
-  odometry_pub.publish(out_msg);
+  geometry_msgs::TwistStamped odometry_msg;
+  odometry_msg.twist.linear.x  = vx;
+  odometry_msg.twist.linear.y  = vy;
+  odometry_msg.twist.angular.z = omega;
+  odometry_pub.publish(odometry_msg);
 
+  nav_msgs::Odometry pose_msg;
+  pose_msg.pose.pose.position.x = x;
+  pose_msg.pose.pose.position.y = y;
+  //pose_msg.pose.pose.orientation = makeQuat(omega)
+  pose_pub.publish(pose_msg);
+  
   // Display results for debugging
-  ROS_INFO("x: [%f]", x);
-  ROS_INFO("y: [%f]", y);
-  ROS_INFO("theta: [%f]", theta);
+  // ROS_INFO("x: [%f]", x);
+  // ROS_INFO("y: [%f]", y);
+  // ROS_INFO("theta: [%f]", theta);
 }
 
 
@@ -114,8 +122,8 @@ int main(int argc, char **argv) {
 
   // Define odometry publisher and encoder subscriber
   odometry_pub = n.advertise<geometry_msgs::TwistStamped>("cmd_val", 1000);
+  pose_pub = n.advertise<nav_msgs::Odometry>("odom", 1000);
   ros::Subscriber encoder_sub = n.subscribe("wheel_states", 1000, encoderDataCallback);
-
 
   ros::Rate loop_rate(100);
 
