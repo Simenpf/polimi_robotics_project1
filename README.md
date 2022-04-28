@@ -8,3 +8,4 @@
 ## Handy commands
 * To see all current topics: `rostopic list`
 * To live-log a topic in terminal:`rostopic echo "topic name from rostopic list"`
+* For visualizing published signals: `rqt_plot`

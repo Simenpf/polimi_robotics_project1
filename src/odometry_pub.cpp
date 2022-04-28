@@ -5,7 +5,9 @@
 #include "nav_msgs/Odometry.h"
 #include <sstream>
 #include "math.h"
-// #include "project1/Reset.h"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "project1/Reset.h"
 
 // Declare variables to be retrieved from parameter-server
 double r;
@@ -89,25 +91,28 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
   odometry_msg.twist.angular.z = omega;
   odometry_pub.publish(odometry_msg);
 
+  tf2::Quaternion quat_tf; 
+  quat_tf.setEuler(0, 0, theta); // verify somehow if this is correct order
+  
   nav_msgs::Odometry pose_msg;
   pose_msg.pose.pose.position.x = x;
   pose_msg.pose.pose.position.y = y;
-  //pose_msg.pose.pose.orientation = makeQuat(omega)
+  pose_msg.pose.pose.orientation = tf2::toMsg(quat_tf);
   pose_pub.publish(pose_msg);
   
   // Display results for debugging
-  // ROS_INFO("x: [%f]", x);
-  // ROS_INFO("y: [%f]", y);
-  // ROS_INFO("theta: [%f]", theta);
+  ROS_INFO("x: [%f]", x);
+  ROS_INFO("y: [%f]", y);
+  ROS_INFO("theta: [%f]", theta);
 }
 
-// bool reset_callback(project1::Reset::Request  &req, project1::Reset::Response &res) {
-//   x = req.new_x;
-//   y = req.new_y;
-//   theta = req.new_theta;
-//   ROS_INFO("x,y and theta reset...");
-//   return true;
-// }
+bool reset_callback(project1::Reset::Request  &req, project1::Reset::Response &res) {
+  x = req.new_x;
+  y = req.new_y;
+  theta = req.new_theta;
+  ROS_INFO("x,y and theta reset...");
+  return true;
+}
 
 
 
@@ -135,9 +140,9 @@ int main(int argc, char **argv) {
   ros::Subscriber encoder_sub = n.subscribe("wheel_states", 1000, encoderDataCallback);
 
   //Define reset service handler
-  // ros::ServiceServer service = 
-  //     n.advertiseService<project1::Reset::Request, 
-  //                        project1::Reset::Response>("reset", reset_callback);
+  ros::ServiceServer service = 
+      n.advertiseService<project1::Reset::Request, 
+                         project1::Reset::Response>("reset", reset_callback);
 
   ros::Rate loop_rate(100);
 
