@@ -34,7 +34,10 @@ catkin_package(CATKIN_DEPENDS message_runtime)
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_executable(odometry_pub src/odometry_pub.cpp)
-add_dependencies(odometry_pub ${catkin_EXPORTED_TARGETS})
+add_dependencies(
+  odometry_pub 
+  ${catkin_EXPORTED_TARGETS} 
+  ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(odometry_pub ${catkin_LIBRARIES})
 
   

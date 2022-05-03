@@ -34,7 +34,6 @@ ros::Publisher odometry_pub;
 ros::Publisher pose_pub;
 
 
-
 double vxFromWheelSpeeds(std::vector<double> speeds){
     return (r/4) * (speeds[front_left]+speeds[front_right]+speeds[rear_left]+speeds[rear_right]);
 }
@@ -62,7 +61,7 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
 
   // Gather data from the encoder message
   std::vector<double> new_wheel_ticks = msg->position;
-  std::vector<double> true_speeds = msg->velocity;        //unused??
+  std::vector<double> true_speeds = msg->velocity;       //unused??
 
   // Initiate temporary variables
   std::vector<double> speeds(4,0.0);
@@ -156,7 +155,6 @@ void paramCallback(int* integrator,
 
 
 
-
 int main(int argc, char **argv) {
   ros::init(argc, argv, "talker");
   ros::NodeHandle n;
@@ -187,6 +185,8 @@ int main(int argc, char **argv) {
   dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
   f = boost::bind(&paramCallback, &integrator, _1, _2);
   dynServer.setCallback(f);
+
+  ROS_INFO("SOMETHING");
 
 
   ros::Rate loop_rate(100);
