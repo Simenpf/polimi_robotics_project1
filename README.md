@@ -8,6 +8,7 @@
 ## Handy commands
 * To see all current topics: `rostopic list`
 * To live-log a topic in terminal:`rostopic echo "topic name from rostopic list"`
+* To use dynamic reconfiguring from GUI: `rosrun rqt_reconfigure rqt_reconfigure`
 
 ## Data visualization using plotjuggler
 * Install plotjuggler by running `sudo apt install ros-melodic-plotjuggler-ros`
@@ -16,6 +17,10 @@
 * Plotjuggler xml file can be loaded into GUI (see "Layout" in "Files" section)to get nice plotting setup.
 
 ## TODO
-* Put timestamp on published messages?
-* Use encoder message timestamp for d_t?
+* Put extra stuff on published messages (like filling the header etc)?
 * Why is there no action in heading in bag 1?
+* Look at post on slack/ros-help about CMAKE add_dependencies() for services, dynamic reconfigure and custom messages.
+* Set up TF tree with world, odom and base_link?
+* Split our code into packages? Kinda feels like he wants that
+* Clean up node and package name and type. In launch file, in main (ros::init), in parameters.cfg (and in the generated include and use in main) 
+* Test using the reset service, if not done already

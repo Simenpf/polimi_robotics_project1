@@ -8,6 +8,8 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "project1/Reset.h"
+#include "project1/parametersConfig.h"
+#include "dynamic_reconfigure/server.h"
 #include "tf2_ros/transform_broadcaster.h"
 #include "geometry_msgs/TransformStamped.h"
 
@@ -26,6 +28,8 @@ std::vector<double> prev_wheel_ticks(4,0.0);
 bool no_previous_encoder_msg = true;
 ros::Time prev_time;
 enum Wheels {front_left, front_right, rear_left, rear_right};
+enum Integrator_method {Euler, RK2};
+int integrator;
 ros::Publisher odometry_pub;
 ros::Publisher pose_pub;
 
@@ -81,15 +85,17 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
   double vy = vyFromWheelSpeeds(speeds);
   double omega = omegaFromWheelSpeeds(speeds);
 
-  // Euler integration
-  x += (vx*cos(theta) - vy*sin(theta)) * d_t;
-  y += (vx*sin(theta) + vy*cos(theta)) * d_t;
-
-  // RK2 integration
-  double angle = theta + omega*d_t/2;
-  // x += (vx*cos(angle) - vy*sin(angle)) * d_t;
-  // y += (vx*sin(angle) + vy*cos(angle)) * d_t;
-  theta += omega*d_t;
+  if (integrator == Integrator_method::Euler){
+    x += (vx*cos(theta) - vy*sin(theta)) * d_t;
+    y += (vx*sin(theta) + vy*cos(theta)) * d_t;
+    theta += omega*d_t;
+  } 
+  else if (integrator == Integrator_method::RK2){
+    double angle = theta + omega*d_t/2;
+    x += (vx*cos(angle) - vy*sin(angle)) * d_t;
+    y += (vx*sin(angle) + vy*cos(angle)) * d_t;
+    theta += omega*d_t;
+  }
 
   // Publish results
   geometry_msgs::TwistStamped odometry_msg;
@@ -129,12 +135,23 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
   // ROS_INFO("theta: [%f]", theta);
 }
 
-bool reset_callback(project1::Reset::Request  &req, project1::Reset::Response &res) {
+bool resetCallback(project1::Reset::Request  &req, project1::Reset::Response &res) {
   x = req.new_x;
   y = req.new_y;
   theta = req.new_theta;
   ROS_INFO("x,y and theta reset...");
   return true;
+}
+
+void paramCallback(int* integrator, 
+              project1::parametersConfig& config, uint32_t level){
+  *integrator = config.integrator;
+  if (config.integrator == Integrator_method::Euler){
+    ROS_INFO("Changing to Euler integration method");
+  }
+  else if (config.integrator == Integrator_method::RK2){
+    ROS_INFO("Changing to RK2 integration method");
+  }
 }
 
 
@@ -163,7 +180,14 @@ int main(int argc, char **argv) {
   //Define reset service handler
   ros::ServiceServer service = 
       n.advertiseService<project1::Reset::Request, 
-                         project1::Reset::Response>("reset", reset_callback);
+                         project1::Reset::Response>("reset", resetCallback);
+
+  // Define dynamic parameter reconfigurer
+  dynamic_reconfigure::Server<project1::parametersConfig> dynServer;
+  dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
+  f = boost::bind(&paramCallback, &integrator, _1, _2);
+  dynServer.setCallback(f);
+
 
   ros::Rate loop_rate(100);
 

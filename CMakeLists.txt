@@ -9,8 +9,10 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
   tf2_ros
+  dynamic_reconfigure
 )
 
+## Add custom message, service, dynamic reconfiguring and their dependencies
 add_service_files(
   FILES
   Reset.srv
@@ -19,18 +21,20 @@ add_service_files(
 generate_messages(
    DEPENDENCIES
    std_msgs
- )
+)
+
+ generate_dynamic_reconfigure_options(
+  cfg/parameters.cfg
+)
 
 ## Declare a catkin package
 catkin_package(CATKIN_DEPENDS message_runtime)
 
-
-
 ## Build
-
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_executable(odometry_pub src/odometry_pub.cpp)
+add_dependencies(odometry_pub ${catkin_EXPORTED_TARGETS})
 target_link_libraries(odometry_pub ${catkin_LIBRARIES})
 
   

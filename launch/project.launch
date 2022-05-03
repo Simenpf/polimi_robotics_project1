@@ -10,7 +10,7 @@
 
 
 
-    <node pkg="project1" type="odometry_pub" output="screen" name="my_publisher" />
-    <node pkg="rosbag" type="play" name="player" args="$(find project1)/bags/bag1.bag"/>
+    <node pkg="project1" type="odometry_pub" output="screen" name="odometry" />
+    <node pkg="rosbag" type="play" name="player" args="$(find project1)/bags/bag2.bag"/>
 
 </launch>
