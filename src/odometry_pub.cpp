@@ -8,6 +8,8 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "project1/Reset.h"
+#include "tf2_ros/transform_broadcaster.h"
+#include "geometry_msgs/TransformStamped.h"
 
 // Declare variables to be retrieved from parameter-server
 double r;
@@ -30,15 +32,15 @@ ros::Publisher pose_pub;
 
 
 double vxFromWheelSpeeds(std::vector<double> speeds){
-    return (r/4)*(speeds[front_left]+speeds[front_right]+speeds[rear_left]+speeds[rear_right]);
+    return (r/4) * (speeds[front_left]+speeds[front_right]+speeds[rear_left]+speeds[rear_right]);
 }
 
 double vyFromWheelSpeeds(std::vector<double> speeds){
-    return (r/4)*(-speeds[front_left]+speeds[front_right]+speeds[rear_left]-speeds[rear_right]);   
+    return (r/4) * (-speeds[front_left]+speeds[front_right]+speeds[rear_left]-speeds[rear_right]);   
 }
 
 double omegaFromWheelSpeeds(std::vector<double> speeds){
-  return (r/(4*(l+w)))*(-speeds[front_left]+speeds[front_right]-speeds[rear_left]+speeds[rear_right]);
+  return (r / (4*(l+w)) ) * (-speeds[front_left]+speeds[front_right]-speeds[rear_left]+speeds[rear_right]);
 }
 
 double wheelSpeedFromTicks(double d_tick, double d_t){
@@ -46,28 +48,33 @@ double wheelSpeedFromTicks(double d_tick, double d_t){
 }
 
 void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
-  // Gather data from the encoder message
-  std::vector<double> new_wheel_ticks = msg->position;
-  std::vector<double> true_speeds = msg->velocity;
-
-  // Initiate temporary variables
-  std::vector<double> speeds(4,0.0);
-  ros::Time new_time = ros::Time::now();
-  double d_t = (new_time-prev_time).toSec();
-
-  // Calculate wheel speeds from encoder ticks
-  for (int i = 0; i < speeds.size(); i++){
-    double d_tick = new_wheel_ticks[i] - prev_wheel_ticks[i];
-    speeds[i] = wheelSpeedFromTicks(d_tick,d_t);
-  }
-
-  // Update global variables and flags  
-  prev_wheel_ticks = new_wheel_ticks;
-  prev_time = new_time;
+  // Cannot compute wheel speeds after only one measurement
   if(no_previous_encoder_msg){
+    prev_time = msg->header.stamp;
+    prev_wheel_ticks = msg->position;
     no_previous_encoder_msg = false;
     return;
   }
+
+  // Gather data from the encoder message
+  std::vector<double> new_wheel_ticks = msg->position;
+  std::vector<double> true_speeds = msg->velocity;        //unused??
+
+  // Initiate temporary variables
+  std::vector<double> speeds(4,0.0);
+  ros::Time new_time = msg->header.stamp;
+  double d_t = (new_time-prev_time).toSec();
+  
+  // Calculate wheel speeds from encoder ticks
+  for (int i = 0; i < speeds.size(); i++){
+    double d_tick = new_wheel_ticks[i] - prev_wheel_ticks[i];
+    speeds[i] = wheelSpeedFromTicks(d_tick, d_t);
+  }
+
+  // Update global variables
+  prev_wheel_ticks = new_wheel_ticks;
+  prev_time = new_time;
+
 
   // Calculate odometry
   double vx = vxFromWheelSpeeds(speeds);
@@ -77,33 +84,49 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
   // Euler integration
   x += (vx*cos(theta) - vy*sin(theta)) * d_t;
   y += (vx*sin(theta) + vy*cos(theta)) * d_t;
-  theta += omega*d_t;
-
-  // TODO: publish pos, compare with GT using e.g. rqt_graph
 
   // RK2 integration
-
+  double angle = theta + omega*d_t/2;
+  // x += (vx*cos(angle) - vy*sin(angle)) * d_t;
+  // y += (vx*sin(angle) + vy*cos(angle)) * d_t;
+  theta += omega*d_t;
 
   // Publish results
   geometry_msgs::TwistStamped odometry_msg;
+  odometry_msg.header.stamp = new_time;
   odometry_msg.twist.linear.x  = vx;
   odometry_msg.twist.linear.y  = vy;
   odometry_msg.twist.angular.z = omega;
   odometry_pub.publish(odometry_msg);
 
   tf2::Quaternion quat_tf; 
-  quat_tf.setEuler(0, 0, theta); // verify somehow if this is correct order
-  
+  quat_tf.setEuler(0, 0, theta);
+
   nav_msgs::Odometry pose_msg;
+  pose_msg.header.stamp = new_time;
+  // Set any frame_ids?
   pose_msg.pose.pose.position.x = x;
   pose_msg.pose.pose.position.y = y;
+  pose_msg.pose.pose.position.z = 0.0;
   pose_msg.pose.pose.orientation = tf2::toMsg(quat_tf);
   pose_pub.publish(pose_msg);
+
+  // Broadcast TF
+  static tf2_ros::TransformBroadcaster tf_br;
+  geometry_msgs::TransformStamped tfStamped;
+  tfStamped.header.stamp = new_time;
+  tfStamped.header.frame_id = "odom";
+  tfStamped.child_frame_id = "base_link";
+  tfStamped.transform.translation.x = x;
+  tfStamped.transform.translation.y = y;
+  tfStamped.transform.translation.z = 0.0;
+  tfStamped.transform.rotation = tf2::toMsg(quat_tf);
+  tf_br.sendTransform(tfStamped);
   
   // Display results for debugging
-  ROS_INFO("x: [%f]", x);
-  ROS_INFO("y: [%f]", y);
-  ROS_INFO("theta: [%f]", theta);
+  // ROS_INFO("x: [%f]", x);
+  // ROS_INFO("y: [%f]", y);
+  // ROS_INFO("theta: [%f]", theta);
 }
 
 bool reset_callback(project1::Reset::Request  &req, project1::Reset::Response &res) {
@@ -120,8 +143,6 @@ bool reset_callback(project1::Reset::Request  &req, project1::Reset::Response &r
 int main(int argc, char **argv) {
   ros::init(argc, argv, "talker");
   ros::NodeHandle n;
-
-  prev_time = ros::Time::now();
 
   // Retrieve parameters set in launch file
   ros::param::get("r",r);

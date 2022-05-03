@@ -8,4 +8,14 @@
 ## Handy commands
 * To see all current topics: `rostopic list`
 * To live-log a topic in terminal:`rostopic echo "topic name from rostopic list"`
-* For visualizing published signals: `rqt_plot`
+
+## Data visualization using plotjuggler
+* Install plotjuggler by running `sudo apt install ros-melodic-plotjuggler-ros`
+* Launch plotjuggler by running `rosrun plotjuggler plotjuggler`
+* A GUI shall open. Run the code with roslaunch to start the publishers you want to visualize data from. In plotjuggler, in the "Streaming" section, start a ROS topic subscriber and check off the desired topics. In the "Timeseries" section, expand the topics until desired signals are found. Click and drag into graph.
+* Plotjuggler xml file can be loaded into GUI (see "Layout" in "Files" section)to get nice plotting setup.
+
+## TODO
+* Put timestamp on published messages?
+* Use encoder message timestamp for d_t?
+* Why is there no action in heading in bag 1?
