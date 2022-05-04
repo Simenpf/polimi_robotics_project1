@@ -12,6 +12,8 @@
 #include "dynamic_reconfigure/server.h"
 #include "tf2_ros/transform_broadcaster.h"
 #include "geometry_msgs/TransformStamped.h"
+#include "project1/Wheel_speed_msg.h"
+
 
 // Declare variables to be retrieved from parameter-server
 double r;
@@ -32,6 +34,7 @@ enum Integrator_method {Euler, RK2};
 int integrator;
 ros::Publisher odometry_pub;
 ros::Publisher pose_pub;
+ros::Publisher rpm_pub;
 
 
 double vxFromWheelSpeeds(std::vector<double> speeds){
@@ -73,6 +76,21 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
     double d_tick = new_wheel_ticks[i] - prev_wheel_ticks[i];
     speeds[i] = wheelSpeedFromTicks(d_tick, d_t);
   }
+
+  project1::Wheel_speed_msg rpm_msg;
+  double rpm_fl = (speeds[0]*60)/(2*M_PI);
+  double rpm_fr = (speeds[1]*60)/(2*M_PI);
+  double rpm_rl = (speeds[2]*60)/(2*M_PI);
+  double rpm_rr = (speeds[3]*60)/(2*M_PI);
+
+  rpm_msg.rpm_fr = rpm_fr;
+  rpm_msg.rpm_fl = rpm_fl;
+  rpm_msg.rpm_rr = rpm_rr;
+  rpm_msg.rpm_rl = rpm_rl;
+
+  rpm_pub.publish(rpm_msg);
+
+
 
   // Update global variables
   prev_wheel_ticks = new_wheel_ticks;
@@ -171,8 +189,10 @@ int main(int argc, char **argv) {
 
 
   // Define odometry publisher and encoder subscriber
-  odometry_pub = n.advertise<geometry_msgs::TwistStamped>("cmd_val", 1000);
+  odometry_pub = n.advertise<geometry_msgs::TwistStamped>("cmd_vel", 1000);
   pose_pub = n.advertise<nav_msgs::Odometry>("odom", 1000);
+  rpm_pub = n.advertise<project1::Wheel_speed_msg>("true_rpm", 1000);
+
   ros::Subscriber encoder_sub = n.subscribe("wheel_states", 1000, encoderDataCallback);
 
   //Define reset service handler

@@ -11,6 +11,7 @@
 
 
     <node pkg="project1" type="odometry_pub" output="screen" name="odometry" />
-    <node pkg="rosbag" type="play" name="player" args="$(find project1)/bags/bag2.bag"/>
+    <node pkg="project1" type="control_pub" output="screen" name="control" />
+    <node pkg="rosbag" type="play" name="player" args="$(find project1)/bags/bag3.bag"/>
 
 </launch>

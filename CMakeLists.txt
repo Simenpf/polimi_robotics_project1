@@ -42,7 +42,9 @@ add_executable(odometry_pub src/odometry_pub.cpp)
 add_dependencies(
   odometry_pub 
   ${catkin_EXPORTED_TARGETS} 
-  ${${PROJECT_NAME}_EXPORTED_TARGETS})
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${PROJECT_NAME}_generate_messages
+  ${PROJECT_NAME}_gencfg)
 target_link_libraries(odometry_pub ${catkin_LIBRARIES})
 
 add_executable(control_pub src/control_pub.cpp)

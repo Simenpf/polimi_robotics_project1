@@ -14,47 +14,44 @@ int N;
 
 
 // Variables 
-enum Odometry {omega, vx, vy};
 ros::Publisher control_pub;
 
 // Calculates rpm (wheel speeds) from odometry (body twist)
-std::vector<double> rpmFromOdometry(std::vector<double> odometry){
-  
-  double rpm_fl = (1/r)*((-l-w)*odometry[omega]+odometry[vx]-odometry[vy]);
-  double rpm_fr = (1/r)*((l+w)*odometry[omega]+odometry[vx]+odometry[vy]);
-  double rpm_rr = (1/r)*((-l-w)*odometry[omega]+odometry[vx]+odometry[vy]);
-  double rpm_rl = (1/r)*((l+w)*odometry[omega]+odometry[vx]-odometry[vy]);
+std::vector<double> rpmFromOdometry(double vx, double vy, double omega){
+  // Computing wheel speed (rad/s)
+  double omega_fl = (1/r) * ( (-l-w) * omega + vx - vy );
+  double omega_fr = (1/r) * ( (l+w)  * omega + vx + vy );
+  double omega_rl = (1/r) * ( (-l-w) * omega + vx + vy );
+  double omega_rr = (1/r) * ( (l+w)  * omega + vx - vy );
+
+  // Converting to rpm
+  double rpm_fl = (omega_fl*60)/(2*M_PI);
+  double rpm_fr = (omega_fr*60)/(2*M_PI);
+  double rpm_rr = (omega_rr*60)/(2*M_PI);
+  double rpm_rl = (omega_rl*60)/(2*M_PI);
+
+
   std::vector<double> rpm = {rpm_fl, rpm_fr, rpm_rr, rpm_rl};
   return rpm;
 }
 
 void callback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
-  
   // Gather data from the odometry message
   double vx = msg->twist.linear.x;
   double vy = msg->twist.linear.y;
   double omega = msg->twist.angular.z;
 
-  std::vector<double> odometry = {vx, vy, omega}; //temp
-
   // Calculate rpm from odometry
-  std::vector<double> rpm = rpmFromOdometry(odometry);
+  std::vector<double> rpm = rpmFromOdometry(vx, vy, omega);
 
   project1::Wheel_speed_msg rpm_msg;
     
-  rpm_msg.rpm_fr = rpm[0];
-  rpm_msg.rpm_fl = rpm[1];
+  rpm_msg.rpm_fl = rpm[0];
+  rpm_msg.rpm_fr = rpm[1];
   rpm_msg.rpm_rr = rpm[2];
   rpm_msg.rpm_rl = rpm[3];
 
   control_pub.publish(rpm_msg);
-    
-
-  // Prints for debug
-  ROS_INFO("rpm front left: [%f]",rpm[0]);
-  ROS_INFO("rpm front right: [%f]",rpm[1]);
-  ROS_INFO("rpm rear right: [%f]",rpm[2]);
-  ROS_INFO("rpm rear left: [%f]",rpm[3]);
 }
 
 int main(int argc, char **argv) {
@@ -70,11 +67,10 @@ int main(int argc, char **argv) {
   
 
   // Define control publisher and odometry subscriber
-  ros::Publisher control_pub = nh.advertise<project1::Wheel_speed_msg>("wheels_rpm", 1000);
+  control_pub = nh.advertise<project1::Wheel_speed_msg>("wheels_rpm", 1000);
   ros::Subscriber odometry_sub = nh.subscribe("cmd_vel", 1000, callback);
 
   ros::Rate loop_rate(100);
-
   while (ros::ok()) {
     
     
