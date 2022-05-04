@@ -18,6 +18,11 @@ add_service_files(
   Reset.srv
 )
 
+add_message_files(
+  FILES
+  Wheel_speed_msg.msg
+)
+
 generate_messages(
    DEPENDENCIES
    std_msgs
@@ -40,4 +45,7 @@ add_dependencies(
   ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(odometry_pub ${catkin_LIBRARIES})
 
-  
+add_executable(control_pub src/control_pub.cpp)
+target_link_libraries(control_pub ${catkin_LIBRARIES})  
+
+add_dependencies(control_pub ${catkin_EXPORTED_TARGETS})
