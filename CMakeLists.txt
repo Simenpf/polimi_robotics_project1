@@ -18,6 +18,11 @@ add_service_files(
   Reset.srv
 )
 
+add_message_files(
+  FILES
+  Wheel_speed_msg.msg
+)
+
 generate_messages(
    DEPENDENCIES
    std_msgs
@@ -45,3 +50,12 @@ target_link_libraries(odometry_node ${catkin_LIBRARIES})
 add_executable(command_node src/command_node.cpp src/encoder_computations.cpp)
 add_dependencies(command_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(command_node ${catkin_LIBRARIES})
+
+add_executable(control_node src/control_node.cpp)
+add_dependencies(
+  control_node 
+  ${catkin_EXPORTED_TARGETS} 
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${PROJECT_NAME}_generate_messages
+  ${PROJECT_NAME}_gencfg)
+target_link_libraries(control_node ${catkin_LIBRARIES})  

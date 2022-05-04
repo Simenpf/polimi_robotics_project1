@@ -25,3 +25,5 @@
 * Clean up node and package name and type. In launch file, in main (ros::init), in parameters.cfg (and in the generated include and use in main) 
 * Test using the reset service, if not done already
 * Add initial pose for each bag in launch file. Comment out the ones not used. Ref slack comment.
+* Change global variables to statics
+* Add comments and refactor all the files in the repo

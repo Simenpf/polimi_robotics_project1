@@ -35,6 +35,8 @@ double theta;     // Robot heading
 bool no_previous_encoder_msg = true;
 int integrator;
 ros::Publisher odometry_pub;
+ros::Publisher rpm_pub;                 // TEMP
+#include "project1/Wheel_speed_msg.h"   // TEMP
 
 
 void computeOdometry(const sensor_msgs::JointState::ConstPtr& msg) {
@@ -64,6 +66,21 @@ void computeOdometry(const sensor_msgs::JointState::ConstPtr& msg) {
     double d_tick = new_wheel_ticks[i] - prev_wheel_ticks[i];
     speeds[i] = wheelSpeedFromTicks(d_tick, d_t, N, T);
   }
+
+  //*** Temp - For RPM debugging ****//
+  project1::Wheel_speed_msg rpm_msg;
+  double rpm_fl = (speeds[0]*60)/(2*M_PI);
+  double rpm_fr = (speeds[1]*60)/(2*M_PI);
+  double rpm_rl = (speeds[2]*60)/(2*M_PI);
+  double rpm_rr = (speeds[3]*60)/(2*M_PI);
+
+  rpm_msg.rpm_fr = rpm_fr;
+  rpm_msg.rpm_fl = rpm_fl;
+  rpm_msg.rpm_rr = rpm_rr;
+  rpm_msg.rpm_rl = rpm_rl;
+
+  rpm_pub.publish(rpm_msg);
+  //***********************//
 
   // Update global variables
   prev_wheel_ticks = new_wheel_ticks;
@@ -112,11 +129,6 @@ void computeOdometry(const sensor_msgs::JointState::ConstPtr& msg) {
   tfStamped.transform.translation.z = 0.0;
   tfStamped.transform.rotation = heading_quat;
   tf_br.sendTransform(tfStamped);
-  
-  // Display results for debugging
-  // ROS_INFO("x: [%f]", x);
-  // ROS_INFO("y: [%f]", y);
-  // ROS_INFO("theta: [%f]", theta);
 }
 
 bool resetCallback(project1::Reset::Request  &req, project1::Reset::Response &res){
@@ -156,6 +168,7 @@ int main(int argc, char **argv) {
   // Define odometry publisher and encoder subscriber
   odometry_pub = n.advertise<nav_msgs::Odometry>("odom", 1000);
   ros::Subscriber encoder_sub = n.subscribe("wheel_states", 1000, computeOdometry);
+  rpm_pub = n.advertise<project1::Wheel_speed_msg>("true_rpm", 1000);
 
   //Define reset service handler
   ros::ServiceServer service = 
@@ -167,7 +180,7 @@ int main(int argc, char **argv) {
   dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
   f = boost::bind(&paramCallback, _1, _2);
   dynServer.setCallback(f);
-  
+
 
   ros::Rate loop_rate(100);
 
