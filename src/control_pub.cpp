@@ -40,6 +40,16 @@ void callback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
   // Calculate rpm from odometry
   std::vector<double> rpm = rpmFromOdometry(odometry);
 
+  project1::Wheel_speed_msg rpm_msg;
+    
+  rpm_msg.rpm_fr = rpm[0];
+  rpm_msg.rpm_fl = rpm[1];
+  rpm_msg.rpm_rr = rpm[2];
+  rpm_msg.rpm_rl = rpm[3];
+
+  control_pub.publish(rpm_msg);
+    
+
   // Prints for debug
   ROS_INFO("rpm front left: [%f]",rpm[0]);
   ROS_INFO("rpm front right: [%f]",rpm[1]);
@@ -67,16 +77,6 @@ int main(int argc, char **argv) {
 
   while (ros::ok()) {
     
-    project1::Wheel_speed_msg rpm_msg;
-    
-    std::vector<double> rpm = rpmFromOdometry(odometry); //needed?
- 
-    rpm_msg.rpm_fr = rpm[0];
-    rpm_msg.rpm_fl = rpm[1];
-    rpm_msg.rpm_rr = rpm[2];
-    rpm_msg.rpm_rl = rpm[3];
-
-    control_pub.publish(rpm_msg);
     
     ros::spinOnce();
     loop_rate.sleep();
