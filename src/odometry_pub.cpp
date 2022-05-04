@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
 
 
   // Define odometry publisher and encoder subscriber
-  odometry_pub = n.advertise<geometry_msgs::TwistStamped>("cmd_val", 1000);
+  odometry_pub = n.advertise<geometry_msgs::TwistStamped>("cmd_vel", 1000);
   pose_pub = n.advertise<nav_msgs::Odometry>("odom", 1000);
   ros::Subscriber encoder_sub = n.subscribe("wheel_states", 1000, encoderDataCallback);
 
