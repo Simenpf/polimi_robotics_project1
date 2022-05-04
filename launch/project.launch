@@ -8,9 +8,8 @@
     <param name="y_init"     type="double" value="0.0"/>
     <param name="theta_init" type="double" value="0.0"/>
 
-
-
-    <node pkg="project1" type="odometry_pub" output="screen" name="odometry" />
+    <node pkg="project1" type="odometry_node" output="screen" name="odometry_pub" />
+    <node pkg="project1" type="command_node" output="screen" name="cmd_pub" />
     <node pkg="rosbag" type="play" name="player" args="$(find project1)/bags/bag2.bag"/>
 
 </launch>

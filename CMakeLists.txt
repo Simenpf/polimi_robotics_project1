@@ -33,11 +33,15 @@ catkin_package(CATKIN_DEPENDS message_runtime)
 ## Build
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(odometry_pub src/odometry_pub.cpp)
+add_executable(odometry_node src/odometry_node.cpp src/encoder_computations.cpp)
 add_dependencies(
-  odometry_pub 
-  ${catkin_EXPORTED_TARGETS} 
-  ${${PROJECT_NAME}_EXPORTED_TARGETS})
-target_link_libraries(odometry_pub ${catkin_LIBRARIES})
+  odometry_node 
+  ${catkin_EXPORTED_TARGETS}
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${PROJECT_NAME}_generate_messages
+  ${PROJECT_NAME}_gencfg)
+target_link_libraries(odometry_node ${catkin_LIBRARIES})
 
-  
+add_executable(command_node src/command_node.cpp src/encoder_computations.cpp)
+add_dependencies(command_node ${catkin_EXPORTED_TARGETS})
+target_link_libraries(command_node ${catkin_LIBRARIES})

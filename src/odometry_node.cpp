@@ -1,56 +1,48 @@
 #include "ros/ros.h"
-#include "std_msgs/String.h"
+
+// Message types for pubs / subs
 #include "geometry_msgs/TwistStamped.h"
 #include "sensor_msgs/JointState.h"
 #include "nav_msgs/Odometry.h"
-#include <sstream>
-#include "math.h"
-#include "tf2/LinearMath/Quaternion.h"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+
+// Includes for reset service
 #include "project1/Reset.h"
+
+// Includes for dynamic parameter reconfiguring
 #include "project1/parametersConfig.h"
 #include "dynamic_reconfigure/server.h"
 #include "tf2_ros/transform_broadcaster.h"
 #include "geometry_msgs/TransformStamped.h"
 
-// Declare variables to be retrieved from parameter-server
-double r;
-double l;
-double w;
-double T;
-int N;
-double y;
-double x;
-double theta;
+// Includes for quaternion operations
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
-// Initialize and declare global variables and flags
-std::vector<double> prev_wheel_ticks(4,0.0);
-bool no_previous_encoder_msg = true;
-ros::Time prev_time;
-enum Wheels {front_left, front_right, rear_left, rear_right};
+#include "encoder_computations.h"
+
 enum Integrator_method {Euler, RK2};
+
+// Declare global parameters to be initialized from parameter-server
+double r;         // Robot wheel radius                                         
+double l;         // Lenght from center of robot to center of wheel along x axis
+double w;         // Width from center of robot to center of wheel along y axis 
+double T;         // Robot wheel gear ratio                                     
+int N;            // Robot wheel encoder ticks per revolution                    
+double y;         // Robot x pos
+double x;         // Robot y pos
+double theta;     // Robot heading
+
+// Declare global variables and flags
+bool no_previous_encoder_msg = true;
 int integrator;
 ros::Publisher odometry_pub;
-ros::Publisher pose_pub;
 
 
-double vxFromWheelSpeeds(std::vector<double> speeds){
-    return (r/4) * (speeds[front_left]+speeds[front_right]+speeds[rear_left]+speeds[rear_right]);
-}
-
-double vyFromWheelSpeeds(std::vector<double> speeds){
-    return (r/4) * (-speeds[front_left]+speeds[front_right]+speeds[rear_left]-speeds[rear_right]);   
-}
-
-double omegaFromWheelSpeeds(std::vector<double> speeds){
-  return (r / (4*(l+w)) ) * (-speeds[front_left]+speeds[front_right]-speeds[rear_left]+speeds[rear_right]);
-}
-
-double wheelSpeedFromTicks(double d_tick, double d_t){
-  return (d_tick*2*M_PI)/(N*T*d_t);
-}
-
-void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
+void computeOdometry(const sensor_msgs::JointState::ConstPtr& msg) {
+  // Declare static variables
+  static ros::Time prev_time;
+  static std::vector<double> prev_wheel_ticks(4,0.0);
+  static int integrator;
+  
   // Cannot compute wheel speeds after only one measurement
   if(no_previous_encoder_msg){
     prev_time = msg->header.stamp;
@@ -61,7 +53,6 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
 
   // Gather data from the encoder message
   std::vector<double> new_wheel_ticks = msg->position;
-  std::vector<double> true_speeds = msg->velocity;       //unused??
 
   // Initiate temporary variables
   std::vector<double> speeds(4,0.0);
@@ -71,18 +62,17 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
   // Calculate wheel speeds from encoder ticks
   for (int i = 0; i < speeds.size(); i++){
     double d_tick = new_wheel_ticks[i] - prev_wheel_ticks[i];
-    speeds[i] = wheelSpeedFromTicks(d_tick, d_t);
+    speeds[i] = wheelSpeedFromTicks(d_tick, d_t, N, T);
   }
 
   // Update global variables
   prev_wheel_ticks = new_wheel_ticks;
   prev_time = new_time;
 
-
   // Calculate odometry
-  double vx = vxFromWheelSpeeds(speeds);
-  double vy = vyFromWheelSpeeds(speeds);
-  double omega = omegaFromWheelSpeeds(speeds);
+  double vx = vxFromWheelSpeeds(speeds, r);
+  double vy = vyFromWheelSpeeds(speeds, r);
+  double omega = omegaFromWheelSpeeds(speeds, r, l, w);
 
   if (integrator == Integrator_method::Euler){
     x += (vx*cos(theta) - vy*sin(theta)) * d_t;
@@ -96,25 +86,20 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
     theta += omega*d_t;
   }
 
-  // Publish results
-  geometry_msgs::TwistStamped odometry_msg;
-  odometry_msg.header.stamp = new_time;
-  odometry_msg.twist.linear.x  = vx;
-  odometry_msg.twist.linear.y  = vy;
-  odometry_msg.twist.angular.z = omega;
-  odometry_pub.publish(odometry_msg);
-
+  // Convert heading to correct quaternion type
   tf2::Quaternion quat_tf; 
   quat_tf.setEuler(0, 0, theta);
-
-  nav_msgs::Odometry pose_msg;
-  pose_msg.header.stamp = new_time;
-  // Set any frame_ids?
-  pose_msg.pose.pose.position.x = x;
-  pose_msg.pose.pose.position.y = y;
-  pose_msg.pose.pose.position.z = 0.0;
-  pose_msg.pose.pose.orientation = tf2::toMsg(quat_tf);
-  pose_pub.publish(pose_msg);
+  geometry_msgs::Quaternion heading_quat = tf2::toMsg(quat_tf);
+  
+  // Publish results
+  nav_msgs::Odometry odometry_msg;
+  odometry_msg.header.stamp = new_time;
+  odometry_msg.header.frame_id = "base_link";
+  odometry_msg.pose.pose.position.x = x;
+  odometry_msg.pose.pose.position.y = y;
+  odometry_msg.pose.pose.position.z = 0.0;
+  odometry_msg.pose.pose.orientation = heading_quat;
+  odometry_pub.publish(odometry_msg);
 
   // Broadcast TF
   static tf2_ros::TransformBroadcaster tf_br;
@@ -125,7 +110,7 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
   tfStamped.transform.translation.x = x;
   tfStamped.transform.translation.y = y;
   tfStamped.transform.translation.z = 0.0;
-  tfStamped.transform.rotation = tf2::toMsg(quat_tf);
+  tfStamped.transform.rotation = heading_quat;
   tf_br.sendTransform(tfStamped);
   
   // Display results for debugging
@@ -134,7 +119,7 @@ void encoderDataCallback(const sensor_msgs::JointState::ConstPtr& msg) {
   // ROS_INFO("theta: [%f]", theta);
 }
 
-bool resetCallback(project1::Reset::Request  &req, project1::Reset::Response &res) {
+bool resetCallback(project1::Reset::Request  &req, project1::Reset::Response &res){
   x = req.new_x;
   y = req.new_y;
   theta = req.new_theta;
@@ -142,9 +127,8 @@ bool resetCallback(project1::Reset::Request  &req, project1::Reset::Response &re
   return true;
 }
 
-void paramCallback(int* integrator, 
-              project1::parametersConfig& config, uint32_t level){
-  *integrator = config.integrator;
+void paramCallback(project1::parametersConfig& config, uint32_t level){
+  integrator = config.integrator;
   if (config.integrator == Integrator_method::Euler){
     ROS_INFO("Changing to Euler integration method");
   }
@@ -169,11 +153,9 @@ int main(int argc, char **argv) {
   ros::param::get("y_init",y);
   ros::param::get("theta_init",theta);
 
-
   // Define odometry publisher and encoder subscriber
-  odometry_pub = n.advertise<geometry_msgs::TwistStamped>("cmd_val", 1000);
-  pose_pub = n.advertise<nav_msgs::Odometry>("odom", 1000);
-  ros::Subscriber encoder_sub = n.subscribe("wheel_states", 1000, encoderDataCallback);
+  odometry_pub = n.advertise<nav_msgs::Odometry>("odom", 1000);
+  ros::Subscriber encoder_sub = n.subscribe("wheel_states", 1000, computeOdometry);
 
   //Define reset service handler
   ros::ServiceServer service = 
@@ -183,11 +165,9 @@ int main(int argc, char **argv) {
   // Define dynamic parameter reconfigurer
   dynamic_reconfigure::Server<project1::parametersConfig> dynServer;
   dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
-  f = boost::bind(&paramCallback, &integrator, _1, _2);
+  f = boost::bind(&paramCallback, _1, _2);
   dynServer.setCallback(f);
-
-  ROS_INFO("SOMETHING");
-
+  
 
   ros::Rate loop_rate(100);
 
