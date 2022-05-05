@@ -36,8 +36,7 @@ class Control_node {
 
   /* 
   Computes the required wheel speeds to achive the commanded velocities from sub (cmd_vel)
-  Publishes these speeds on topic (wheel_speeds)
-  */
+  Publishes these speeds on topic (wheel_speeds)*/
   void commandCallback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
     // Gather data from the command message
     double vx = msg->twist.linear.x;
@@ -50,7 +49,6 @@ class Control_node {
     // Publish rpms
     project1::Wheel_speed_msg rpm_msg;
     rpm_msg.header.stamp = msg->header.stamp;
-    rpm_msg.header.frame_id = "base_link";
     rpm_msg.rpm_fl = rpm[0];
     rpm_msg.rpm_fr = rpm[1];
     rpm_msg.rpm_rr = rpm[2];
@@ -63,16 +61,16 @@ class Control_node {
   public:
 
   Control_node(){
+    // Retrieve parameters set in launch file
+    ros::param::get("r",r);
+    ros::param::get("l",l);
+    ros::param::get("w",w);
+
     control_pub = n.advertise<project1::Wheel_speed_msg>("wheels_rpm", 1000);
     odometry_sub = n.subscribe("cmd_vel", 1000, &Control_node::commandCallback, this);
   }
 
   void run_main(){
-
-    // Retrieve parameters set in launch file
-    ros::param::get("r",r);
-    ros::param::get("l",l);
-    ros::param::get("w",w);
 
     ros::Rate loop_rate(100);
 

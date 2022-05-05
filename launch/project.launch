@@ -5,8 +5,16 @@
     <param name="T"          type="double" value="5" />
     <param name="N"          type="int"    value="42" />
 
-    <?ignore For the initial parameters deviations less than 1cm 
-    or 1deg compared to GT are disregarded?>
+    <?ignore 
+    Enables changing r, l and w variables with dynamic reconfiguring during runtime.
+    Note: This will only affect the odometry node. Update this file with final values.?>
+    <param name="enable_parameter_tuning"  type="bool"   value="false" />
+
+
+    <?ignore 
+    For the initial parameters deviations less than 1cm 
+    or 1deg compared to GT are disregarded
+    ?>
 
     <?ignore Initial parameters for bag 1
     <param name="x_init"     type="double" value="0.0"/>
@@ -24,6 +32,7 @@
     <param name="x_init"     type="double" value="0.0"/>
     <param name="y_init"     type="double" value="0.04"/>
     <param name="theta_init" type="double" value="0.0"/>
+
 
     <node pkg="project1" type="odometry_node" output="screen" name="odometry_node" />
     <node pkg="project1" type="command_node" output="screen" name="command_node" />

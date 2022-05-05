@@ -33,6 +33,9 @@ class Odometry_node {
   ros::ServiceServer service;
   dynamic_reconfigure::Server<project1::parametersConfig> dynServer;
   dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
+
+  // Enables changing r, l and w variables with dynamic reconfiguring during runtime
+  bool enable_parameter_tuning;
  
   // Pose variables w.r.t odom frame
   double x;                         // Robot x pos   
@@ -174,36 +177,44 @@ class Odometry_node {
   Callback for dynamic parameter reconfiguring.*/
   void paramCallback(project1::parametersConfig& config, uint32_t level){
     integrator = config.integrator;
-    r = config.r;
-    l = config.l;
-    w = config.w;
-    T = config.T;
-    N = config.N;
 
-    ROS_INFO("Parameter Update in Odometry Node:");
-    ROS_INFO("**********************************");
     if (config.integrator == Integrator_method::Euler){
-      ROS_INFO("Integrator: Euler");
+      ROS_INFO("Odometry integration method set to Euler");
     }
     else if (config.integrator == Integrator_method::RK2){
-      ROS_INFO("Integrator: RK2");
+      ROS_INFO("Odometry integration method set to RK2");
     }
-    ROS_INFO("r: [%f]",r);
-    ROS_INFO("l: [%f]",l);
-    ROS_INFO("w: [%f]",w);
-    ROS_INFO("T: [%f]",T);
-    ROS_INFO("N: [%i]",N);
-    ROS_INFO("**********************************");
+
+    if(enable_parameter_tuning){
+      r = config.r;
+      l = config.l;
+      w = config.w;
+      ROS_INFO("Robot parameter update:");
+      ROS_INFO("r: [%f]",r);
+      ROS_INFO("l: [%f]",l);
+      ROS_INFO("w: [%f]",w);
+    }
   }
 
 
   public:
 
   Odometry_node(){
+    // Retrieve parameters set in launch file
+    ros::param::get("r",r);
+    ros::param::get("l",l);
+    ros::param::get("w",w);
+    ros::param::get("T",T);
+    ros::param::get("N",N);
+    ros::param::get("enable_parameter_tuning",enable_parameter_tuning);
+
+    if(enable_parameter_tuning){
+      ROS_INFO("Parameter tuning enabled");
+    }
+
     x     = 0.0;
     y     = 0.0;
     theta = 0.0;
-
     no_previous_encoder_msg = true;
     
     odometry_pub = n.advertise<nav_msgs::Odometry>("odom", 1000);
@@ -220,12 +231,7 @@ class Odometry_node {
     double y_init;
     double theta_init;
   
-    // Retrieve parameters set in launch file
-    ros::param::get("r",r);
-    ros::param::get("l",l);
-    ros::param::get("w",w);
-    ros::param::get("T",T);
-    ros::param::get("N",N);
+    // Retrieve initial pose set in launch file
     ros::param::get("x_init",x_init);
     ros::param::get("y_init",y_init);
     ros::param::get("theta_init",theta_init);

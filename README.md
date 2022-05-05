@@ -17,26 +17,7 @@
 * Plotjuggler xml file can be loaded into GUI (see "Layout" in "Files" section)to get nice plotting setup.
 
 ## TODO
-* Write instructions file 
-* Make TF tree
-* Optimize params
-* Refactor 
-  - control_node
-  - ros::init names
-  - consider moving some global variables to main and use boost::bind?
-* Consider adding initial pose for each bag in launch file. Comment out the ones not used.
-* Consider filling seq_nr in header on messages to be published. Double check frame_ids.
-* make classes of sub + pubs, see slides.
-* should reset move odom frame to reset the requested pos and set base_link to 0? 
-* smoother initalization of computeOdometry (prev variables and flag)
-* decide to use this everywhere or not
-* decide to put spinning loop in class or not
+* Write TF tree in instructions file
+* Finish refactor control and command node
+* Sjekke at topics og meldingstyper stemmer med spec
 * Remove command for playing bag from launch
-
-## Tuning notes
-* Start by not touching T and N as that doesnt make so much sense.
-* Starting with bag1 where movement is simplest. Robot only moving in x dir -> invariant to l and w (see formulas for vx, vy, w), can tune r alone to match GT
-* matches good in driving in beginning, not perfect after turning. Can look like robot turns slightly, which is underestimated in the code (corresponding to lower w or l). But this would only scale up theta, not change its shape which we see is a bit wrong anyways. Conclusion: The error is due to noise in GT, skidding etc.
-* l and w does only affect rotation (w)
-* sees from bag2 that the robot rotates too little -> increase l or w (only sum of them matters)
-
