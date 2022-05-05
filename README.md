@@ -31,6 +31,7 @@
 * smoother initalization of computeOdometry (prev variables and flag)
 * decide to use this everywhere or not
 * decide to put spinning loop in class or not
+* Remove command for playing bag from launch
 
 ## Tuning notes
 * Start by not touching T and N as that doesnt make so much sense.
@@ -38,3 +39,4 @@
 * matches good in driving in beginning, not perfect after turning. Can look like robot turns slightly, which is underestimated in the code (corresponding to lower w or l). But this would only scale up theta, not change its shape which we see is a bit wrong anyways. Conclusion: The error is due to noise in GT, skidding etc.
 * l and w does only affect rotation (w)
 * sees from bag2 that the robot rotates too little -> increase l or w (only sum of them matters)
+
