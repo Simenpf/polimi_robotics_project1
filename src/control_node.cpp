@@ -6,12 +6,19 @@
 #include "geometry_msgs/TwistStamped.h"
 #include "project1/Wheel_speed_msg.h"
 
+// Includes for dynamic parameter reconfiguring
+#include "project1/parametersConfig.h"
+#include "dynamic_reconfigure/server.h"
+
 
 class Control_node {
   private:
   ros::Subscriber odometry_sub;
   ros::Publisher control_pub;
   ros::NodeHandle n;
+
+  dynamic_reconfigure::Server<project1::parametersConfig> dynServer;
+  dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
   
   double r;  // Robot wheel radius                                             
   double l;  // Lenght from center of robot to center of wheel along x axis
@@ -59,11 +66,27 @@ class Control_node {
     control_pub.publish(rpm_msg);
   }
 
+  void paramCallback(project1::parametersConfig& config, uint32_t level){
+    r = config.r;
+    l = config.l;
+    w = config.w;
+
+    ROS_INFO("Parameter Update in Control Node:");
+    ROS_INFO("**********************************");
+    ROS_INFO("r: [%f]",r);
+    ROS_INFO("l: [%f]",l);
+    ROS_INFO("w: [%f]",w);
+    ROS_INFO("**********************************");
+  }
+
   public:
   Control_node(double r, double l, double w):
   r{r},l{l},w{w} {
     control_pub = n.advertise<project1::Wheel_speed_msg>("wheels_rpm", 1000);
     odometry_sub = n.subscribe("cmd_vel", 1000, &Control_node::commandCallback, this);
+
+    this->f = boost::bind(&Control_node::paramCallback, this, _1, _2);
+    this->dynServer.setCallback(this->f);
   }
 };
 

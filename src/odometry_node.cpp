@@ -165,13 +165,27 @@ class OdometryNode {
   }
 
   void paramCallback(project1::parametersConfig& config, uint32_t level){
-    this->integrator = config.integrator;
+    integrator = config.integrator;
+    r = config.r;
+    l = config.l;
+    w = config.w;
+    T = config.T;
+    N = config.N;
+
+    ROS_INFO("Parameter Update in Odometry Node:");
+    ROS_INFO("**********************************");
     if (config.integrator == Integrator_method::Euler){
-      ROS_INFO("Setting Euler as integration method");
+      ROS_INFO("Integrator: Euler");
     }
     else if (config.integrator == Integrator_method::RK2){
-      ROS_INFO("Setting RK2 as integration method");
+      ROS_INFO("Integrator: RK2");
     }
+    ROS_INFO("r: [%f]",r);
+    ROS_INFO("l: [%f]",l);
+    ROS_INFO("w: [%f]",w);
+    ROS_INFO("T: [%f]",T);
+    ROS_INFO("N: [%i]",N);
+    ROS_INFO("**********************************");
   }
 
 
@@ -179,19 +193,19 @@ class OdometryNode {
 
   OdometryNode(double r, double l, double w, double T, int N) : 
   r{r}, l{l}, w{w}, T{T}, N{N} {
-    this->x     = 0.0;
-    this->y     = 0.0;
-    this->theta = 0.0;
+    x     = 0.0;
+    y     = 0.0;
+    theta = 0.0;
 
-    this->no_previous_encoder_msg = true;
+    no_previous_encoder_msg = true;
     
-    this->odometry_pub = this->n.advertise<nav_msgs::Odometry>("odom", 1000);
-    this->encoder_sub  = this->n.subscribe("wheel_states", 1000, &OdometryNode::encoderCallback, this);
+    odometry_pub = n.advertise<nav_msgs::Odometry>("odom", 1000);
+    encoder_sub  = n.subscribe("wheel_states", 1000, &OdometryNode::encoderCallback, this);
   
-    this->service = this->n.advertiseService("reset", &OdometryNode::resetCallback, this);
+    service = n.advertiseService("reset", &OdometryNode::resetCallback, this);
    
-    this->f = boost::bind(&OdometryNode::paramCallback, this, _1, _2);
-    this->dynServer.setCallback(this->f);
+    f = boost::bind(&OdometryNode::paramCallback, this, _1, _2);
+    dynServer.setCallback(f);
   }
 };
 

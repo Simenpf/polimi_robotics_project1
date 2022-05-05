@@ -6,6 +6,10 @@
 #include "sensor_msgs/JointState.h"
 #include "project1/Wheel_speed_msg.h"
 
+// Includes for dynamic parameter reconfiguring
+#include "project1/parametersConfig.h"
+#include "dynamic_reconfigure/server.h"
+
 
 class Command_node {
   private:
@@ -13,6 +17,10 @@ class Command_node {
   ros::Subscriber encoder_sub;
   ros::Publisher cmd_pub;
   ros::Publisher rpm_pub;
+
+  dynamic_reconfigure::Server<project1::parametersConfig> dynServer;
+  dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
+
   ros::Time prev_time;
   std::vector<double> prev_wheel_ticks;
   bool no_previous_encoder_msg = true;
@@ -86,12 +94,33 @@ class Command_node {
     cmd_pub.publish(cmd_msg);
   }
 
+  void paramCallback(project1::parametersConfig& config, uint32_t level){
+    r = config.r;
+    l = config.l;
+    w = config.w;
+    T = config.T;
+    N = config.N;
+
+    ROS_INFO("Parameter Update in Command Node:");
+    ROS_INFO("**********************************");
+    ROS_INFO("r: [%f]",r);
+    ROS_INFO("l: [%f]",l);
+    ROS_INFO("w: [%f]",w);
+    ROS_INFO("T: [%f]",T);
+    ROS_INFO("N: [%i]",N);
+    ROS_INFO("**********************************");
+  }
+
+
   public:
   Command_node(double r, double l, double w, double T, int N):
   r{r}, l{l}, w{w},T{T},N{N} {
     encoder_sub = n.subscribe("wheel_states", 1000, &Command_node::encoderCallback, this);
     cmd_pub = n.advertise<geometry_msgs::TwistStamped>("cmd_vel", 1000);
     rpm_pub = n.advertise<project1::Wheel_speed_msg>("true_rpm", 1000);  
+
+    this->f = boost::bind(&Command_node::paramCallback, this, _1, _2);
+    this->dynServer.setCallback(this->f);
   }
 };
 
