@@ -4,9 +4,24 @@
     <param name="w"          type="double" value="0.169" />
     <param name="T"          type="double" value="5" />
     <param name="N"          type="int"    value="42" />
+
+    <?ignore
+     Initial parameters for bag 1
     <param name="x_init"     type="double" value="0.0"/>
     <param name="y_init"     type="double" value="0.0"/>
     <param name="theta_init" type="double" value="0.0"/>
+    ?>
+
+    <?ignore Initial parameters for bag 2 ?>
+    <param name="x_init"     type="double" value="0.025"/>
+    <param name="y_init"     type="double" value="0.0"/>
+    <param name="theta_init" type="double" value="0.0"/>
+
+    <?ignore Initial parameters for bag 3
+    <param name="x_init"     type="double" value="0.0"/>
+    <param name="y_init"     type="double" value="0.0"/>
+    <param name="theta_init" type="double" value="0.0"/>
+    ?>
 
     <node pkg="project1" type="odometry_node" output="screen" name="odometry_pub" />
     <node pkg="project1" type="command_node" output="screen" name="cmd_pub" />

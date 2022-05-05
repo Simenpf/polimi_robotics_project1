@@ -31,3 +31,4 @@
 * smoother initalization of computeOdometry (prev variables and flag)
 * decide to use this everywhere or not
 * decide to put spinning loop in class or not
+* Remove command for playing bag from launch
