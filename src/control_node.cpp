@@ -1,52 +1,53 @@
 #include "ros/ros.h"
+#include "math.h"
+
+// Message types for pubs / subs
 #include "std_msgs/String.h"
 #include "geometry_msgs/TwistStamped.h"
 #include "project1/Wheel_speed_msg.h"
-#include <sstream>
-#include "math.h"
 
 
 class Control_node {
-private:
-  double r;
-  double l;
-  double w;
-  double T;
-  int N;
-  ros::NodeHandle n;
-  ros::Publisher control_pub;
+  private:
   ros::Subscriber odometry_sub;
+  ros::Publisher control_pub;
+  ros::NodeHandle n;
+  
+  double r;  // Robot wheel radius                                             
+  double l;  // Lenght from center of robot to center of wheel along x axis
+  double w;  // Width from center of robot to center of wheel along y axis  
 
-
-  // Calculates rpm (wheel speeds) from odometry (body twist)
-  std::vector<double> rpmFromOdometry(double vx, double vy, double omega){
+  // Calculates rpm (wheel speeds) from body velocites (body twist)
+  std::vector<double> rpmFromVelocities(double vx, double vy, double omega){
     // Computing wheel speeds (rad/s)
-    double omega_fl = (1/this->r) * ( (-this->l-this->w) * omega + vx - vy );
-    double omega_fr = (1/this->r) * ( (+this->l+this->w) * omega + vx + vy );
-    double omega_rl = (1/this->r) * ( (-this->l-this->w) * omega + vx + vy );
-    double omega_rr = (1/this->r) * ( (+this->l+this->w) * omega + vx - vy );
+    double omega_fl = (1/r) * ( (-l-w) * omega + vx - vy );
+    double omega_fr = (1/r) * ( (+l+w) * omega + vx + vy );
+    double omega_rl = (1/r) * ( (-l-w) * omega + vx + vy );
+    double omega_rr = (1/r) * ( (+l+w) * omega + vx - vy );
 
     // Converting to rpm
-    double rpm_fl = (omega_fl*60)/(2*M_PI);
-    double rpm_fr = (omega_fr*60)/(2*M_PI);
-    double rpm_rr = (omega_rr*60)/(2*M_PI);
-    double rpm_rl = (omega_rl*60)/(2*M_PI);
+    double rpm_fl = (omega_fl*60) / (2*M_PI);
+    double rpm_fr = (omega_fr*60) / (2*M_PI);
+    double rpm_rl = (omega_rl*60) / (2*M_PI);
+    double rpm_rr = (omega_rr*60) / (2*M_PI);
 
-
-    std::vector<double> rpm = {rpm_fl, rpm_fr, rpm_rr, rpm_rl};
-    return rpm;
+    return {rpm_fl, rpm_fr, rpm_rr, rpm_rl};
   }
 
-public:
-  void callback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
-    // Gather data from the odometry message
+  /* 
+  Computes the required wheel speeds to achive the commanded velocities from sub (cmd_vel)
+  Publishes these speeds on topic (wheel_speeds)
+  */
+  void commandCallback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
+    // Gather data from the command message
     double vx = msg->twist.linear.x;
     double vy = msg->twist.linear.y;
     double omega = msg->twist.angular.z;
 
-    // Calculate rpm from odometry
-    std::vector<double> rpm = rpmFromOdometry(vx, vy, omega);
+    // Calculate rpm from velocities
+    std::vector<double> rpm = rpmFromVelocities(vx, vy, omega);
 
+    // Publish rpms
     project1::Wheel_speed_msg rpm_msg;
     rpm_msg.header.stamp = msg->header.stamp;
     rpm_msg.header.frame_id = "base_link";
@@ -57,13 +58,12 @@ public:
 
     control_pub.publish(rpm_msg);
   }
-  Control_node(double r, double l, double w, double T) {
-    this->control_pub = this->n.advertise<project1::Wheel_speed_msg>("wheels_rpm", 1000);
-    this->odometry_sub = this->n.subscribe("cmd_vel", 1000, &Control_node::callback, this);
-    this->r = r;
-    this->l = l;
-    this->w = w;
-    this->T = T;
+
+  public:
+  Control_node(double r, double l, double w):
+  r{r},l{l},w{w} {
+    control_pub = n.advertise<project1::Wheel_speed_msg>("wheels_rpm", 1000);
+    odometry_sub = n.subscribe("cmd_vel", 1000, &Control_node::commandCallback, this);
   }
 };
 
@@ -80,13 +80,10 @@ int main(int argc, char **argv) {
   ros::param::get("r",r);
   ros::param::get("l",l);
   ros::param::get("w",w);
-  ros::param::get("T",T); //motor or wheel?
 
-  Control_node cntr_node(r,l,w,T);
+  // Create node instance
+  Control_node cntr_node(r,l,w);
   
-
-
-
   ros::Rate loop_rate(100);
   while (ros::ok()) {
     
