@@ -1,9 +1,13 @@
 #include "ros/ros.h"
 
-// Message types for pubs / subs
+// Includes for pub / sub message types
 #include "geometry_msgs/TwistStamped.h"
 #include "sensor_msgs/JointState.h"
 #include "nav_msgs/Odometry.h"
+
+// Includes for TF broadcasting
+#include "tf2_ros/transform_broadcaster.h"
+#include "geometry_msgs/TransformStamped.h"
 
 // Includes for reset service
 #include "project1/Reset.h"
@@ -11,8 +15,6 @@
 // Includes for dynamic parameter reconfiguring
 #include "project1/parametersConfig.h"
 #include "dynamic_reconfigure/server.h"
-#include "tf2_ros/transform_broadcaster.h"
-#include "geometry_msgs/TransformStamped.h"
 
 // Includes for quaternion operations
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
@@ -26,11 +28,11 @@ class OdometryNode {
   ros::NodeHandle n;
   ros::Subscriber encoder_sub;
   ros::Publisher odometry_pub;
+  tf2_ros::TransformBroadcaster tf_br;
 
   ros::ServiceServer service;
   dynamic_reconfigure::Server<project1::parametersConfig> dynServer;
   dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
-  tf2_ros::TransformBroadcaster tf_br;
  
   double x;                         // Robot x pos   
   double y;                         // Robot y pos   
@@ -47,7 +49,6 @@ class OdometryNode {
   // Variables for odometry computation
   bool no_previous_encoder_msg;
   ros::Time prev_measurement_time;
-  //std::vector<double> prev_wheel_ticks(4,0.0);
   std::vector<double> prev_wheel_ticks;
   
   /*
@@ -107,7 +108,7 @@ class OdometryNode {
     // Publish results
     nav_msgs::Odometry odometry_msg;
     odometry_msg.header.stamp = new_time;
-    odometry_msg.header.frame_id = "base_link";
+    odometry_msg.header.frame_id = "odom";
     odometry_msg.pose.pose.position.x = x;
     odometry_msg.pose.pose.position.y = y;
     odometry_msg.pose.pose.position.z = 0.0;
@@ -135,14 +136,14 @@ class OdometryNode {
     quat_tf.setEuler(0, 0, req.new_theta);
     geometry_msgs::Quaternion heading_quat = tf2::toMsg(quat_tf);
 
-    geometry_msgs::TransformStamped odom_tfStamped;
-    odom_tfStamped.header.frame_id = "world";
-    odom_tfStamped.child_frame_id = "odom";
-    odom_tfStamped.transform.translation.x = req.new_x;
-    odom_tfStamped.transform.translation.y = req.new_y;
-    odom_tfStamped.transform.translation.z = 0.0;
-    odom_tfStamped.transform.rotation = heading_quat;
-    tf_br.sendTransform(odom_tfStamped);
+    geometry_msgs::TransformStamped odom_tf;
+    odom_tf.header.frame_id = "world";
+    odom_tf.child_frame_id = "odom";
+    odom_tf.transform.translation.x = req.new_x;
+    odom_tf.transform.translation.y = req.new_y;
+    odom_tf.transform.translation.z = 0.0;
+    odom_tf.transform.rotation = heading_quat;
+    tf_br.sendTransform(odom_tf);
 
     x = 0.0;
     y = 0.0;
@@ -151,16 +152,16 @@ class OdometryNode {
     quat_tf.setEuler(0, 0, theta);
     heading_quat = tf2::toMsg(quat_tf);
 
-    geometry_msgs::TransformStamped baselink_tfStamped;
-    baselink_tfStamped.header.frame_id = "odom";
-    baselink_tfStamped.child_frame_id = "base_link";
-    baselink_tfStamped.transform.translation.x = x;
-    baselink_tfStamped.transform.translation.y = y;
-    baselink_tfStamped.transform.translation.z = 0.0;
-    baselink_tfStamped.transform.rotation = heading_quat;
-    tf_br.sendTransform(baselink_tfStamped);
+    geometry_msgs::TransformStamped baselink_tf;
+    baselink_tf.header.frame_id = "odom";
+    baselink_tf.child_frame_id = "base_link";
+    baselink_tf.transform.translation.x = x;
+    baselink_tf.transform.translation.y = y;
+    baselink_tf.transform.translation.z = 0.0;
+    baselink_tf.transform.rotation = heading_quat;
+    tf_br.sendTransform(baselink_tf);
 
-    ROS_INFO("Odometry is reset");
+    ROS_INFO("Odometry is reset to: \nx: [%f] \ny: [%f] \ntheta: [%f]", req.new_x, req.new_y, req.new_theta);
     return true;
   }
 
@@ -191,8 +192,7 @@ class OdometryNode {
 
   public:
 
-  OdometryNode(double r, double l, double w, double T, int N) : 
-  r{r}, l{l}, w{w}, T{T}, N{N} {
+  OdometryNode(){
     x     = 0.0;
     y     = 0.0;
     theta = 0.0;
@@ -207,58 +207,54 @@ class OdometryNode {
     f = boost::bind(&OdometryNode::paramCallback, this, _1, _2);
     dynServer.setCallback(f);
   }
+
+  void run_main(){
+    double x_init;
+    double y_init;
+    double theta_init;
+  
+    // Retrieve parameters set in launch file
+    ros::param::get("r",r);
+    ros::param::get("l",l);
+    ros::param::get("w",w);
+    ros::param::get("T",T);
+    ros::param::get("N",N);
+    ros::param::get("x_init",x_init);
+    ros::param::get("y_init",y_init);
+    ros::param::get("theta_init",theta_init);
+  
+    // Convert heading to correct quaternion type
+    tf2::Quaternion quat_tf; 
+    quat_tf.setEuler(0, 0, theta_init);
+    geometry_msgs::Quaternion heading_quat = tf2::toMsg(quat_tf);
+  
+    // Broadcast world->odom TF based on init parameters
+    geometry_msgs::TransformStamped tfStamped;
+    tfStamped.header.frame_id = "world";
+//    tfStamped.header.stamp = ros::Time::now();
+    tfStamped.child_frame_id = "odom";
+    tfStamped.transform.translation.x = x_init;
+    tfStamped.transform.translation.y = y_init;
+    tfStamped.transform.translation.z = 0.0;
+    tfStamped.transform.rotation = heading_quat;
+    tf_br.sendTransform(tfStamped);
+
+    ros::Rate loop_rate(100);
+
+    while (ros::ok()) {
+      ros::spinOnce();
+      loop_rate.sleep();
+    }
+  }
 };
 
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "talker");
 
-  double r;
-  double l;
-  double w;
-  double T;
-  int N;
+  OdometryNode odomNode;
 
-  double x_init;
-  double y_init;
-  double theta_init;
-
-  // Retrieve parameters set in launch file
-  ros::param::get("r",r);
-  ros::param::get("l",l);
-  ros::param::get("w",w);
-  ros::param::get("T",T);
-  ros::param::get("N",N);
-  ros::param::get("x_init",x_init);
-  ros::param::get("y_init",y_init);
-  ros::param::get("theta_init",theta_init);
-
-  // Convert heading to correct quaternion type
-  tf2::Quaternion quat_tf; 
-  quat_tf.setEuler(0, 0, theta_init);
-  geometry_msgs::Quaternion heading_quat = tf2::toMsg(quat_tf);
-
-  // Broadcast world->odom TF based on init parameters
-  tf2_ros::TransformBroadcaster tf_br;
-  geometry_msgs::TransformStamped tfStamped;
-  tfStamped.header.frame_id = "world";
-  tfStamped.child_frame_id = "odom";
-  tfStamped.transform.translation.x = x_init;
-  tfStamped.transform.translation.y = y_init;
-  tfStamped.transform.translation.z = 0.0;
-  tfStamped.transform.rotation = heading_quat;
-  tf_br.sendTransform(tfStamped);
-
-
-  OdometryNode odomNode(r, l, w, T, N);
-
-
-  ros::Rate loop_rate(100);
-
-  while (ros::ok()) {
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
+  odomNode.run_main();
 
   return 0;
 }
