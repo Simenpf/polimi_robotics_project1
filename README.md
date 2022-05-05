@@ -26,3 +26,8 @@
   - consider moving some global variables to main and use boost::bind?
 * Consider adding initial pose for each bag in launch file. Comment out the ones not used.
 * Consider filling seq_nr in header on messages to be published. Double check frame_ids.
+* make classes of sub + pubs, see slides.
+* should reset move odom frame to reset the requested pos and set base_link to 0? 
+* smoother initalization of computeOdometry (prev variables and flag)
+* decide to use this everywhere or not
+* decide to put spinning loop in class or not
