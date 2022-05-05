@@ -5,26 +5,29 @@
     <param name="T"          type="double" value="5" />
     <param name="N"          type="int"    value="42" />
 
+    <?ignore For the initial parameters deviations less than 1cm 
+    or 1deg compared to GT are disregarded?>
+
     <?ignore Initial parameters for bag 1
     <param name="x_init"     type="double" value="0.0"/>
     <param name="y_init"     type="double" value="0.0"/>
-    <param name="theta_init" type="double" value="0.0"/>
+    <param name="theta_init" type="double" value="-0.038"/>
     ?>
 
-    <?ignore Initial parameters for bag 2 ?>
+    <?ignore Initial parameters for bag 2 
     <param name="x_init"     type="double" value="0.025"/>
     <param name="y_init"     type="double" value="0.0"/>
-    <param name="theta_init" type="double" value="0.0"/>
-
-    <?ignore Initial parameters for bag 3
-    <param name="x_init"     type="double" value="0.0"/>
-    <param name="y_init"     type="double" value="0.0"/>
-    <param name="theta_init" type="double" value="0.0"/>
+    <param name="theta_init" type="double" value="-0.017"/>
     ?>
 
-    <node pkg="project1" type="odometry_node" output="screen" name="odometry_pub" />
-    <node pkg="project1" type="command_node" output="screen" name="cmd_pub" />
-    <node pkg="project1" type="control_node" output="screen" name="control_pub" />
-    <node pkg="rosbag" type="play" name="player" args="$(find project1)/bags/bag2.bag"/>
+    <?ignore Initial parameters for bag 3 ?>
+    <param name="x_init"     type="double" value="0.0"/>
+    <param name="y_init"     type="double" value="0.04"/>
+    <param name="theta_init" type="double" value="0.0"/>
+
+    <node pkg="project1" type="odometry_node" output="screen" name="odometry_node" />
+    <node pkg="project1" type="command_node" output="screen" name="command_node" />
+    <node pkg="project1" type="control_node" output="screen" name="control_node" />
+    <node pkg="rosbag" type="play" name="player" args="$(find project1)/bags/bag3.bag"/>
 
 </launch>

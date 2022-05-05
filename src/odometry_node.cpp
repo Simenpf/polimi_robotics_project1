@@ -23,7 +23,7 @@
 
 enum Integrator_method {Euler, RK2};
 
-class OdometryNode {
+class Odometry_node {
   private:
   ros::NodeHandle n;
   ros::Subscriber encoder_sub;
@@ -34,12 +34,13 @@ class OdometryNode {
   dynamic_reconfigure::Server<project1::parametersConfig> dynServer;
   dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
  
+  // Pose variables w.r.t odom frame
   double x;                         // Robot x pos   
   double y;                         // Robot y pos   
   double theta;                     // Robot heading
  
   // Dynamic reconfigurable parameters, see cfg/parameters.cfg for default values
-  int integrator;
+  int integrator;                   // Odometry integration method
   double r;                         // Robot wheel radius                                         
   double l;                         // Lenght from center of robot to center of wheel along x axis
   double w;                         // Width from center of robot to center of wheel along y axis 
@@ -54,9 +55,9 @@ class OdometryNode {
   /*
   Computes odometry from encoder ticks
   Publishes results as nav_msgs/Odometry on topic odom
-  Broadcasts corresponding odom->base_link TF 
-  */
+  Broadcasts corresponding odom->base_link TF */
   void encoderCallback(const sensor_msgs::JointState::ConstPtr& msg){
+    
     // Cannot compute wheel speeds after only one measurement
     if(no_previous_encoder_msg){
       prev_measurement_time = msg->header.stamp;
@@ -128,14 +129,17 @@ class OdometryNode {
   } 
 
   /*
-  Boradcasts new requested world->odom TF. 
-  Resets x, y, theta to 0 and broadcasts corresponding odom->baselink.
-  */
+  Callback for reset service.
+  Moves odom frame to requested pose TF. 
+  Resets x, y, theta to 0 and broadcasts corresponding odom->baselink TF.*/
   bool resetCallback(project1::Reset::Request &req, project1::Reset::Response &res){
+    
+    // Extract requested heading quaternion
     tf2::Quaternion quat_tf; 
     quat_tf.setEuler(0, 0, req.new_theta);
     geometry_msgs::Quaternion heading_quat = tf2::toMsg(quat_tf);
 
+    // Move odom frame to requested pose
     geometry_msgs::TransformStamped odom_tf;
     odom_tf.header.frame_id = "world";
     odom_tf.child_frame_id = "odom";
@@ -145,6 +149,7 @@ class OdometryNode {
     odom_tf.transform.rotation = heading_quat;
     tf_br.sendTransform(odom_tf);
 
+    // Reset odometry variables and base_link frame
     x = 0.0;
     y = 0.0;
     theta = 0.0;
@@ -165,6 +170,8 @@ class OdometryNode {
     return true;
   }
 
+  /*
+  Callback for dynamic parameter reconfiguring.*/
   void paramCallback(project1::parametersConfig& config, uint32_t level){
     integrator = config.integrator;
     r = config.r;
@@ -192,7 +199,7 @@ class OdometryNode {
 
   public:
 
-  OdometryNode(){
+  Odometry_node(){
     x     = 0.0;
     y     = 0.0;
     theta = 0.0;
@@ -200,11 +207,11 @@ class OdometryNode {
     no_previous_encoder_msg = true;
     
     odometry_pub = n.advertise<nav_msgs::Odometry>("odom", 1000);
-    encoder_sub  = n.subscribe("wheel_states", 1000, &OdometryNode::encoderCallback, this);
+    encoder_sub  = n.subscribe("wheel_states", 1000, &Odometry_node::encoderCallback, this);
   
-    service = n.advertiseService("reset", &OdometryNode::resetCallback, this);
+    service = n.advertiseService("reset", &Odometry_node::resetCallback, this);
    
-    f = boost::bind(&OdometryNode::paramCallback, this, _1, _2);
+    f = boost::bind(&Odometry_node::paramCallback, this, _1, _2);
     dynServer.setCallback(f);
   }
 
@@ -231,7 +238,6 @@ class OdometryNode {
     // Broadcast world->odom TF based on init parameters
     geometry_msgs::TransformStamped tfStamped;
     tfStamped.header.frame_id = "world";
-//    tfStamped.header.stamp = ros::Time::now();
     tfStamped.child_frame_id = "odom";
     tfStamped.transform.translation.x = x_init;
     tfStamped.transform.translation.y = y_init;
@@ -250,11 +256,11 @@ class OdometryNode {
 
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "talker");
+  ros::init(argc, argv, "odometry_node");
 
-  OdometryNode odomNode;
+  Odometry_node node;
 
-  odomNode.run_main();
+  node.run_main();
 
   return 0;
 }

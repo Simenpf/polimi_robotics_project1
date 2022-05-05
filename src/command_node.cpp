@@ -6,9 +6,6 @@
 #include "sensor_msgs/JointState.h"
 #include "project1/Wheel_speed_msg.h"
 
-// Includes for dynamic parameter reconfiguring
-#include "project1/parametersConfig.h"
-#include "dynamic_reconfigure/server.h"
 
 
 class Command_node {
@@ -17,9 +14,6 @@ class Command_node {
   ros::Subscriber encoder_sub;
   ros::Publisher cmd_pub;
   ros::Publisher rpm_pub;
-
-  dynamic_reconfigure::Server<project1::parametersConfig> dynServer;
-  dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
 
   ros::Time prev_time;
   std::vector<double> prev_wheel_ticks;
@@ -87,68 +81,46 @@ class Command_node {
     // Publish results
     geometry_msgs::TwistStamped cmd_msg;
     cmd_msg.header.stamp = new_time;
-    cmd_msg.header.frame_id = "base_link";
     cmd_msg.twist.linear.x  = vx;
     cmd_msg.twist.linear.y  = vy;
     cmd_msg.twist.angular.z = omega;
     cmd_pub.publish(cmd_msg);
   }
 
-  void paramCallback(project1::parametersConfig& config, uint32_t level){
-    r = config.r;
-    l = config.l;
-    w = config.w;
-    T = config.T;
-    N = config.N;
-
-    ROS_INFO("Parameter Update in Command Node:");
-    ROS_INFO("**********************************");
-    ROS_INFO("r: [%f]",r);
-    ROS_INFO("l: [%f]",l);
-    ROS_INFO("w: [%f]",w);
-    ROS_INFO("T: [%f]",T);
-    ROS_INFO("N: [%i]",N);
-    ROS_INFO("**********************************");
-  }
-
 
   public:
-  Command_node(double r, double l, double w, double T, int N):
-  r{r}, l{l}, w{w},T{T},N{N} {
+
+  Command_node(){
     encoder_sub = n.subscribe("wheel_states", 1000, &Command_node::encoderCallback, this);
     cmd_pub = n.advertise<geometry_msgs::TwistStamped>("cmd_vel", 1000);
     rpm_pub = n.advertise<project1::Wheel_speed_msg>("true_rpm", 1000);  
+  }
 
-    this->f = boost::bind(&Command_node::paramCallback, this, _1, _2);
-    this->dynServer.setCallback(this->f);
+  void run_main(){
+
+    // Retrieve parameters set in launch file
+    ros::param::get("r",r);
+    ros::param::get("l",l);
+    ros::param::get("w",w);
+    ros::param::get("T",T);
+    ros::param::get("N",N);
+
+    ros::Rate loop_rate(100);
+
+    while (ros::ok()) {
+      ros::spinOnce();
+      loop_rate.sleep();
+    }
   }
 };
 
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "talker");
+  ros::init(argc, argv, "command_node");
 
-  // Retrieve parameters set in launch file
-  double r;
-  double l;
-  double w;
-  double T;
-  int N;
-  ros::param::get("r",r);
-  ros::param::get("l",l);
-  ros::param::get("w",w);
-  ros::param::get("T",T);
-  ros::param::get("N",N);
+  Command_node node;
 
-  // Create node instance
-  Command_node cmd_node(r,l,w,T,N);
-
-  ros::Rate loop_rate(100);
-
-  while (ros::ok()) {
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
+  node.run_main();
 
   return 0;
 }
