@@ -27,20 +27,58 @@
 * `plotjuggler_setup_GT_comparison.xml`: A plotjuggler configuration file. Can be loaded into plotjuggler to visualize the project results.
 
 # ROS Parameters Name and Meaning
-## The parameters of the robot hardware:
+**The parameters of the robot hardware**:
 * `r`: Radius of the robot wheels. 
 * `l`: Lenght from center of robot to center of wheel along x axis.
 * `w`: Width from center of robot to center of wheel along y axis.
 * `T`: Gear ratio between motor axel and wheel axel.
 * `N`: Number of ticks per revolution of the wheel encoders.
 
-## The initial values of the robot odometry (there are three sets of them corresponding to the three bags):
+**The initial values of the robot odometry (there are three sets of them corresponding to the three bags)**:
 * `x_init`: The initial x-position of the robot.
 * `y_init`: The initial y-position of the robot.
 * `theta_init`: The initial rotation of the robot.
 
-## Parameters for program configuration:
+**Parameters for program configuration**:
 * `integrator`: Defines whether the odometry is computed using Euler method or Runge-Kutta of second order.
 
 # Structure of the TF Tree
+
+# Structure of Custom Message
+Custom message for publishing RPM of all wheels:
+* `Header header`:  Header
+* `float64 rpm_fl`: RPM of front left wheel
+* `float64 rpm_fr`: RPM of front right wheel
+* `float64 rpm_rr`: RPM of rear right wheel 
+* `float64 rpm_rl`: RPM of rear left wheel
+
+# Instructions For Use
+**Launching the Project**
+The project can be launched by running `roslaunch project.launch`.
+This will start all the nodes, and initialize the needed parameters.
+
+**Visualizing the Odometry and RPM results**
+Layouts for plotjuggler has been made for easy visualization of the results. There is a layout for comparing the ground truth to the odometry found by integration. There is also a layout for comparing the wheel RPMs calculated directly from encoder data, and the RPMs calculated using inverse kinematics on robot velocities. 
+To visualize the odometry:
+  * Launch plotjuggler by running `rosrun plotjuggler plotjuggler`
+  * Click the load layout button and select `plotjuggler_setup_GT_comparison.xml`
+  * In the pop-up window select `/odom` and `/robot/pose`
+To visualize the RPM:
+  * Launch plotjuggler by running `rosrun plotjuggler plotjuggler`
+  * Click the load layout button and select `plotjuggler_setup_rpm_comparison.xml`
+  * In the pop-up window select `/wheels_rpm` and `/true_rpm`
+
+It is important to note that since the plots are comparing the odometry to the ground truth, there will be a slight offset between the two if the ground truth (bag) does not have zero initial conditions.
+
+**Tuning Parameters**
+Dynamic reconfigure has been used to allow for easier tuning of parameters and changing of odometry integrator-method. The default values of the dynamically reconfigurable parameters are the ones found after tuning. To tune/change parameters and change integrator dynamically, use: rosrun `rqt_reconfigure rqt_reconfigure`.
+
+**Resetting Odometry with Custom Service**
+The service for resetting the odometry can be called from the command-line, with three arguments in the following way: `rosservice call /reset x_value y_value theta_value`
+This will change the transformation between the odometry frame and the world frame, according to the new given frame for the odometry.
+
+
+
+# Additional Information
+
 
