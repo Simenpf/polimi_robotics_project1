@@ -48,7 +48,8 @@ public:
     std::vector<double> rpm = rpmFromOdometry(vx, vy, omega);
 
     project1::Wheel_speed_msg rpm_msg;
-
+    rpm_msg.header.stamp = msg->header.stamp;
+    rpm_msg.header.frame_id = "base_link";
     rpm_msg.rpm_fl = rpm[0];
     rpm_msg.rpm_fr = rpm[1];
     rpm_msg.rpm_rr = rpm[2];

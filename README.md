@@ -17,13 +17,12 @@
 * Plotjuggler xml file can be loaded into GUI (see "Layout" in "Files" section)to get nice plotting setup.
 
 ## TODO
-* Put extra stuff on published messages (like filling the header etc)?
-* Why is there no action in heading in bag 1?
-* Look at post on slack/ros-help about CMAKE add_dependencies() for services, dynamic reconfigure and custom messages.
-* Set up TF tree with world, odom and base_link if needed?
-* Split our code into packages? Kinda feels like he wants that
-* Clean up node and package name and type. In launch file, in main (ros::init), in parameters.cfg (and in the generated include and use in main) 
-* Test using the reset service, if not done already
-* Add initial pose for each bag in launch file. Comment out the ones not used. Ref slack comment.
-* Change global variables to statics
-* Add comments and refactor all the files in the repo
+* Write instructions file 
+* Make TF tree
+* Optimize params
+* Refactor 
+  - control_node
+  - ros::init names
+  - consider moving some global variables to main and use boost::bind?
+* Consider adding initial pose for each bag in launch file. Comment out the ones not used.
+* Consider filling seq_nr in header on messages to be published. Double check frame_ids.
