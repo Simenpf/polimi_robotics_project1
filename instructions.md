@@ -5,7 +5,7 @@
 
 # File Descriptions
 * `bags/`
-  * The provided bags for robot ground-truth
+  * The provided bags for robot ground-truth and encoder data
 * `cfg/`
   * `parameters.cfg`: Configuration file used for dynamic reconfiguring of parameters.
 * `include/`
@@ -15,16 +15,17 @@
 * `msg/`
   * `Wheel_speed_msg.msg`: File defining the structure of the custom message for wheel rpms.
 * `src/`
-  * `command_node.cpp`: A node that subscribes to encoder messages and uses this to compute linear and angular velocities, published as commands for control.
+  * `command_node.cpp`: A node that subscribes to encoder messages and uses this to compute linear and angular robot velocities, published as commands for control.
   * `control_node.cpp`: A node that subscribes to velocity commands, and computes the inverse kinematics to get the required wheel speeds. These wheel speeds are published.
   * `encoder_computations.h`: A set of helper functions for transforming encoder data to robot velocities.
-  * `odometry_node.cpp`: A node that subscribes to encoder messages, computes the odometry and publishes this odometry.
+  * `odometry_node.cpp`: A node that subscribes to encoder messages, computes the odometry and publishes this odometry. Also maintains the TF tree.
 * `srv/`
   * `Reset.srv`: File defining the structure of the custom service for resetting the robot odometry.
 * `CMakeLists.txt`: File containing instructions of source files and libraries needed for building the project.
 * `instructions.md`: This file, containing information about the project.
 * `package.xml`: File defining properties of the ros-package (there is only one package in the project).
-* `plotjuggler_setup_GT_comparison.xml`: A plotjuggler configuration file. Can be loaded into plotjuggler to visualize the project results.
+* `plotjuggler_setup_GT_comparison.xml`: A plotjuggler configuration file. Can be loaded into plotjuggler to visualize the odometry results.
+* `plotjuggler_setup_rpm_comparison.xml`: A plotjuggler configuration file. Can be loaded into plotjuggler to visualize the control results.
 
 # ROS Parameters Name and Meaning
 ## The parameters of the robot hardware:
@@ -40,12 +41,13 @@
 * `theta_init`: The initial rotation of the robot.
 
 ## Parameters for program configuration:
-* `integrator`: Defines whether the odometry is computed using Euler method or Runge-Kutta of second order.
+* `integrator`: Defines whether the odometry is computed using Euler method or Runge-Kutta of second order. Dynamically reconfigurable.
+* `enable_parameter_tuning`: Defines whether to allow dynamical reconfiguration of the parameters `r`, `l` and `w`, used in the odometry calculation.
 
 # Structure of the TF Tree
 
 # Structure of Custom Message
-Custom message for publishing RPM of all wheels:
+Custom message for publishing desired RPM of all wheels:
 * `Header header`:  Header
 * `float64 rpm_fl`: RPM of front left wheel
 * `float64 rpm_fr`: RPM of front right wheel
@@ -54,7 +56,7 @@ Custom message for publishing RPM of all wheels:
 
 # Instructions For Use
 ## Launching the Project
-The project can be launched by running `roslaunch project.launch`.
+The project can be launched by running `roslaunch "path to"/project.launch`.
 This will start all the nodes, and initialize the needed parameters.
 
 ## Visualizing the Odometry and RPM results
@@ -68,14 +70,14 @@ To visualize the RPM:
   * Click the load layout button and select `plotjuggler_setup_rpm_comparison.xml`
   * In the pop-up window select `/wheels_rpm` and `/true_rpm`
 
-It is important to note that since the plots are comparing the odometry to the ground truth, there will be a slight offset between the two if the ground truth (bag) does not have zero initial conditions.
+It is important to note that since the plots are comparing the odometry (given in odom frame) to the ground truth (given in world frame), there will be a slight offset between the two if the ground truth (bag) does not have zero initial conditions.
 
-## Tuning Parameters
-Dynamic reconfigure has been used to allow for easier tuning of parameters and changing of odometry integrator-method. The default values of the dynamically reconfigurable parameters are the ones found after tuning. To tune/change parameters and change integrator dynamically, use: rosrun `rqt_reconfigure rqt_reconfigure`.
+## Tuning Parameters and Changing Integrator
+Dynamic reconfigure has been used to allow for easier tuning of parameters and changing of odometry integrator-method. The default values of the dynamically reconfigurable parameters are the ones found after tuning. To tune/change parameters and change integrator dynamically, use: rosrun `rqt_reconfigure rqt_reconfigure`. Note that the parameter `enable_parameter_tuning` in the launch file must be set true for the tuning to affect the odometry.
 
 ## Resetting Odometry with Custom Service
 The service for resetting the odometry can be called from the command-line, with three arguments in the following way: `rosservice call /reset x_value y_value theta_value`
-This will change the transformation between the odometry frame and the world frame, according to the new given frame for the odometry.
+This will move the odometry frame to the requested pose.
 
 
 
@@ -86,6 +88,6 @@ To tune the parameters `r`, `l` and `w` we added the possibility to have them dy
 Since `l` and `w` always contrbutes to computations as a sum, there is nothing to be gained by tuning them independently in this case. As there is no way to know what relationship between them is correct, given the data we have. Therefore, only `l` was tuned.
 
 Our process for the tuning was as follows:
-1. `r` could be tuned independenty using bag 1. By changing `r` until the odometry matched the ground truth in the linear movement along the robot-frame's x-axis.
+1. Since `l` and `w` only affect the integration of theta `r` could be tuned independenty using bag 1, as it contains no rotations. By changing `r` until the odometry matched the ground truth in the linear movement along the robot-frame's x-axis.
 2. Using the tuned `r`, we could tune `l` by ensuring that the angular velocity matches the ground truth angular velocity in bag2 and bag3. 
 
