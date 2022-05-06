@@ -38,6 +38,7 @@ class Control_node {
   Computes the required wheel speeds to achive the commanded velocities from sub (cmd_vel)
   Publishes these speeds on topic (wheel_speeds)*/
   void commandCallback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
+
     // Gather data from the command message
     double vx = msg->twist.linear.x;
     double vy = msg->twist.linear.y;
@@ -66,6 +67,7 @@ class Control_node {
     ros::param::get("l",l);
     ros::param::get("w",w);
 
+    // Initialize publisher and subscriber
     control_pub = n.advertise<project1::Wheel_speed_msg>("wheels_rpm", 1000);
     odometry_sub = n.subscribe("cmd_vel", 1000, &Control_node::commandCallback, this);
   }

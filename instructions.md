@@ -22,6 +22,7 @@
 * `srv/`
   * `Reset.srv`: File defining the structure of the custom service for resetting the robot odometry.
 * `CMakeLists.txt`: File containing instructions of source files and libraries needed for building the project.
+* `graph_of_project_nodes_and_topics.svg`: An image showing the interaction between nodes and topics in this project
 * `instructions.md`: This file, containing information about the project.
 * `package.xml`: File defining properties of the ros-package (there is only one package in the project).
 * `plotjuggler_setup_GT_comparison.xml`: A plotjuggler configuration file. Can be loaded into plotjuggler to visualize the odometry results.
@@ -74,7 +75,7 @@ To visualize the odometry:
 To visualize the RPM:
   * Launch plotjuggler by running `rosrun plotjuggler plotjuggler`
   * Click the load layout button and select `plotjuggler_setup_rpm_comparison.xml`
-  * In the pop-up window select `/wheels_rpm` and `/true_rpm`
+  * In the pop-up window select `/wheels_rpm` and `/sensor_rpm`
 
 It is important to note that since the plots are comparing the odometry (given in odom frame) to the ground truth (given in world frame), there will be a slight offset between the two if the ground truth (bag) does not have zero initial conditions.
 
@@ -96,4 +97,8 @@ Since `l` and `w` always contrbutes to computations as a sum, there is nothing t
 Our process for the tuning was as follows:
 1. Since `l` and `w` only affect the integration of theta `r` could be tuned independenty using bag 1, as it contains no rotations. By changing `r` until the odometry matched the ground truth in the linear movement along the robot-frame's x-axis.
 2. Using the tuned `r`, we could tune `l` by ensuring that the angular velocity matches the ground truth angular velocity in bag2 and bag3. 
+
+## Nodes and Topics
+To get a better overview of the nodes and topics of this project, and their interaction, a graph has been generated. This is the image `graph_of_project_nodes_and_topics.svg`:
+<img src="./graph_of_project_nodes_and_topics.svg">
 
