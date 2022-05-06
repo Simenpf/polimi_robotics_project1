@@ -1,42 +1,42 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
  <tabbed_widget name="Main Window" parent="main_window">
-  <Tab containers="1" tab_name="tab1">
+  <Tab tab_name="tab1" containers="1">
    <Container>
-    <DockSplitter count="2" orientation="-" sizes="0.5;0.5">
-     <DockSplitter count="2" orientation="|" sizes="0.5;0.5">
+    <DockSplitter count="2" sizes="0.500855;0.499145" orientation="-">
+     <DockSplitter count="2" sizes="0.500538;0.499462" orientation="|">
       <DockArea name="Front Left">
-       <plot flip_y="false" style="Lines" mode="TimeSeries" flip_x="false">
-        <range right="88.299326" bottom="-66.317433" left="0.000000" top="96.003588"/>
+       <plot flip_x="false" flip_y="false" style="Lines" mode="TimeSeries">
+        <range left="9.889558" bottom="-62.595974" top="91.980067" right="49.870252"/>
         <limitY/>
-        <curve name="/true_rpm/rpm_fl" color="#1f77b4"/>
         <curve name="/wheels_rpm/rpm_fl" color="#f14cc1"/>
+        <curve name="/sensor_rpm/rpm_fl" color="#1f77b4"/>
        </plot>
       </DockArea>
       <DockArea name="Front Right">
-       <plot flip_y="false" style="Lines" mode="TimeSeries" flip_x="false">
-        <range right="88.299326" bottom="-110.909983" left="0.000000" top="105.416062"/>
+       <plot flip_x="false" flip_y="false" style="Lines" mode="TimeSeries">
+        <range left="9.889558" bottom="-56.255312" top="104.083021" right="49.870252"/>
         <limitY/>
-        <curve name="/true_rpm/rpm_fr" color="#d62728"/>
         <curve name="/wheels_rpm/rpm_fr" color="#9467bd"/>
+        <curve name="/sensor_rpm/rpm_fr" color="#d62728"/>
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter count="2" orientation="|" sizes="0.5;0.5">
+     <DockSplitter count="2" sizes="0.500538;0.499462" orientation="|">
       <DockArea name="Rear Left">
-       <plot flip_y="false" style="Lines" mode="TimeSeries" flip_x="false">
-        <range right="88.299326" bottom="-91.604647" left="0.000000" top="84.822088"/>
+       <plot flip_x="false" flip_y="false" style="Lines" mode="TimeSeries">
+        <range left="9.889558" bottom="-86.074162" top="84.687198" right="49.870252"/>
         <limitY/>
-        <curve name="/true_rpm/rpm_rl" color="#ff7f0e"/>
         <curve name="/wheels_rpm/rpm_rl" color="#17becf"/>
+        <curve name="/sensor_rpm/rpm_rl" color="#1ac938"/>
        </plot>
       </DockArea>
       <DockArea name="Rear Right">
-       <plot flip_y="false" style="Lines" mode="TimeSeries" flip_x="false">
-        <range right="88.299326" bottom="-85.583794" left="0.000000" top="103.585043"/>
+       <plot flip_x="false" flip_y="false" style="Lines" mode="TimeSeries">
+        <range left="9.889558" bottom="-84.487008" top="103.558292" right="49.870252"/>
         <limitY/>
-        <curve name="/true_rpm/rpm_rr" color="#1ac938"/>
         <curve name="/wheels_rpm/rpm_rr" color="#bcbd22"/>
+        <curve name="/sensor_rpm/rpm_rr" color="#ff7f0e"/>
        </plot>
       </DockArea>
      </DockSplitter>
@@ -50,7 +50,7 @@
  <!-- - - - - - - - - - - - - - - -->
  <Plugins>
   <plugin ID="DataLoad CSV">
-   <default delimiter="0" time_axis=""/>
+   <default time_axis="" delimiter="0"/>
   </plugin>
   <plugin ID="DataLoad ROS bags">
    <use_header_stamp value="false"/>
@@ -83,7 +83,33 @@
  <previouslyLoaded_Datafiles/>
  <previouslyLoaded_Streamer name="ROS Topic Subscriber"/>
  <!-- - - - - - - - - - - - - - - -->
- <customMathEquations/>
+ <customMathEquations>
+  <snippet name="GT_yaw_deg">
+   <global></global>
+   <function>return value*180/3.14159</function>
+   <linked_source>GT_yaw</linked_source>
+  </snippet>
+  <snippet name="GT_yaw">
+   <global></global>
+   <function>w = value
+x = v1
+y = v2
+z = v3
+
+dcm10 = 2 * (x * y + w * z)
+dcm00 = w*w + x*x - y*y - z*z
+
+yaw = math.atan(dcm10, dcm00)
+
+return yaw</function>
+   <linked_source>/robot/pose/pose/orientation/w</linked_source>
+   <additional_sources>
+    <v1>/robot/pose/pose/orientation/x</v1>
+    <v2>/robot/pose/pose/orientation/y</v2>
+    <v3>/robot/pose/pose/orientation/z</v3>
+   </additional_sources>
+  </snippet>
+ </customMathEquations>
  <snippets/>
  <!-- - - - - - - - - - - - - - - -->
 </root>

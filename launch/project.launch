@@ -32,7 +32,7 @@
     <param name="x_init"     type="double" value="0.0"/>
     <param name="y_init"     type="double" value="0.04"/>
     <param name="theta_init" type="double" value="0.0"/>
-
+    
 
     <node pkg="project1" type="odometry_node" output="screen" name="odometry_node" />
     <node pkg="project1" type="command_node" output="screen" name="command_node" />
