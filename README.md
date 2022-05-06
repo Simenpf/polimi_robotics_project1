@@ -17,7 +17,4 @@
 * Plotjuggler xml file can be loaded into GUI (see "Layout" in "Files" section)to get nice plotting setup.
 
 ## TODO
-* Write TF tree in instructions file
-* Finish refactor control and command node
-* Sjekke at topics og meldingstyper stemmer med spec
 * Remove command for playing bag from launch

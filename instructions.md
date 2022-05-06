@@ -45,6 +45,12 @@
 * `enable_parameter_tuning`: Defines whether to allow dynamical reconfiguration of the parameters `r`, `l` and `w`, used in the odometry calculation.
 
 # Structure of the TF Tree
+In the project there are the following three reference frames:
+* `world`: TF root, the static frame in which the GT pose from the bags is expressed.
+* `odom`: The frame with origin where the robots starts dead-reckoning. The robot odometry is published with respect to this frame.
+* `base_link`: The frame coinciding with the robot center of gravity (also assumed to coincide with its geometric center). Initialized at the origin of `odom`.
+
+The frames have the following hierarchical strucutre: `world` -> `odom` -> `base_link`. The `world` -> `odom` transformation is computed based on the robot initial pose, retrieved from the launch file. The `odom` -> `base_link` transformation is updated each time the odometry is updated with new encoder measurements. The only time the `odom` frame moves is when the reset service is called. Then the `odom` frame is moved to the requested coordinates and the `base_link` frame is reinitialized to the origin of `odom`.
 
 # Structure of Custom Message
 Custom message for publishing desired RPM of all wheels:
