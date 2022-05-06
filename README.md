@@ -18,6 +18,5 @@
 
 ## TODO
 * Write TF tree in instructions file
-* Finish refactor control and command node
-* Sjekke at topics og meldingstyper stemmer med spec
+* Finish refactor control and command node 
 * Remove command for playing bag from launch

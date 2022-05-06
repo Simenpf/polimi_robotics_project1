@@ -18,7 +18,6 @@ class Command_node {
   ros::Time prev_time;
   std::vector<double> prev_wheel_ticks;
   bool no_previous_encoder_msg = true;
-  bool publishing_true_rpm = true;
 
   double r;  // Robot wheel radius                                             
   double l;  // Lenght from center of robot to center of wheel along x axis
@@ -26,7 +25,9 @@ class Command_node {
   double T;  // Robot wheel gear ratio                                       
   int N;     // Robot wheel encoder ticks per revolution 
 
-  void publish_true_rpm(std::vector<double> speeds) {
+  
+  // Converts speeds from rad/s to rpm, and publishes them
+  void publish_sensor_rpm(std::vector<double> speeds) {
     double rpm_fl = (speeds[0]*60)/(2*M_PI);
     double rpm_fr = (speeds[1]*60)/(2*M_PI);
     double rpm_rl = (speeds[2]*60)/(2*M_PI);
@@ -42,6 +43,7 @@ class Command_node {
   }
 
   void encoderCallback(const sensor_msgs::JointState::ConstPtr& msg) {
+
     // Cannot compute wheel speeds after only one measurement
     if(no_previous_encoder_msg){
       prev_time = msg->header.stamp;
@@ -64,10 +66,7 @@ class Command_node {
       speeds[i] = wheelSpeedFromTicks(d_tick, d_t, N, T);
     }
   
-    if (publishing_true_rpm){
-      publish_true_rpm(speeds);
-    }
-
+    publish_sensor_rpm(speeds);
 
     // Update global variables
     prev_wheel_ticks = new_wheel_ticks;
@@ -93,7 +92,7 @@ class Command_node {
   Command_node(){
     encoder_sub = n.subscribe("wheel_states", 1000, &Command_node::encoderCallback, this);
     cmd_pub = n.advertise<geometry_msgs::TwistStamped>("cmd_vel", 1000);
-    rpm_pub = n.advertise<project1::Wheel_speed_msg>("true_rpm", 1000);  
+    rpm_pub = n.advertise<project1::Wheel_speed_msg>("sensor_rpm", 1000);  
   }
 
   void run_main(){
