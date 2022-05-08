@@ -1,5 +1,5 @@
 # Team Members ( Name Surname (student ID) )
-* Ingvild Fleisje ()
+* Ingvild Fleisje (10846223)
 * Kristian Borgen (10877857)
 * Simen Fløtaker  (10845390)
 
@@ -62,8 +62,13 @@ Custom message for publishing desired RPM of all wheels:
 * `float64 rpm_rl`: RPM of rear left wheel
 
 # Instructions For Use
+Open a terminal in the catkin_ws folder and run `source devel/setup.bash`.
+
+## Building the Project
+ In the same folder run `catkin_make` to build the project.
+
 ## Launching the Project
-The project can be launched by running `roslaunch "path to"/project.launch`.
+First run `roscore` in a seperate terminal from the catkin_ws folder, then the project can be launched by running `roslaunch "path to"/project.launch` also from the catkin_ws folder.
 This will start all the nodes, and initialize the needed parameters.
 
 ## Visualizing the Odometry and RPM results
@@ -92,7 +97,7 @@ This will move the odometry frame to the requested pose.
 ## Explanation of Parameter Tuning Process
 To tune the parameters `r`, `l` and `w` we added the possibility to have them dynamically reconfigurable (`T` and `N` was not tuned as they will contribute in the same factor as `r`, thus only `r` needs to be tuned. Although this does of course not guarantee that the values correspond with the actual values, just that they will work for the odometry computations). This way the parameter values could be changed with sliders, while looking at the plotjuggler plots.
 
-Since `l` and `w` always contrbutes to computations as a sum, there is nothing to be gained by tuning them independently in this case. As there is no way to know what relationship between them is correct, given the data we have. Therefore, only `l` was tuned.
+Since `l` and `w` always contributes to computations as a sum, there is nothing to be gained by tuning them independently in this case. As there is no way to know what relationship between them is correct, given the data we have. Therefore, only `l` was tuned.
 
 Our process for the tuning was as follows:
 1. Since `l` and `w` only affect the integration of theta `r` could be tuned independenty using bag 1, as it contains no rotations. By changing `r` until the odometry matched the ground truth in the linear movement along the robot-frame's x-axis.
